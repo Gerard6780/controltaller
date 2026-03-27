@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPV Gestión - Reparación y Creación</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Main Screen -->
+        <section id="home-screen" class="view active">
+            <header class="terra-header">
+                <div class="top-row">
+                    <div class="brand-container">
+                        <img src="images/logo_modul4-6.png" alt="Modul4" class="brand-logo">
+                    </div>
+                    <div class="admin-info">
+                        <div class="admin-name">Admin: Gerard Anta | Taller Produccion</div>
+                        <div id="current-date" class="admin-date">...</div>
+                    </div>
+                </div>
+                <div class="title-row">
+                    <h1 class="logo-tagline">Control Entradas Taller</h1>
+                </div>
+            </header>
+
+            <div class="main-buttons">
+                <button id="btn-repair" class="massive-btn card-repair">
+                    <div class="icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 1 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                        </svg>
+                    </div>
+                    <span class="btn-title">Nueva Reparación</span>
+                    <p class="btn-desc">Iniciar un nuevo registro de reparación de equipo.</p>
+                </button>
+
+                <button id="btn-create" class="massive-btn card-create">
+                    <div class="icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 21h18M5 21V7l8-4v18M13 3l4 4M9 21v-4h4v4M7 9h2M7 12h2M7 15h2" />
+                        </svg>
+                    </div>
+                    <span class="btn-title">Nueva Creación</span>
+                    <p class="btn-desc">Registrar una nueva fabricación o ensamblaje.</p>
+                </button>
+
+                <!-- NUEVO BOTÓN HISTORIAL -->
+                <button id="btn-history" class="massive-btn card-history">
+                    <div class="icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 3v18h18V3H3zm2 2h14v14H5V5z" />
+                            <path d="M8 12h8" />
+                        </svg>
+                    </div>
+                    <span class="btn-title">Ver Registros</span>
+                    <p class="btn-desc">Consultar y buscar registros de reparaciones y creaciones.</p>
+                </button>
+            </div>
+        </section>
+
+        <!-- Repair Form -->
+        <section id="repair-screen" class="view">
+            <div class="form-container glass">
+                <header class="form-header">
+                    <button class="btn-back">← Volver</button>
+                    <h2>Nueva Reparación</h2>
+                    <div id="repair-id-display" class="id-badge">...</div>
+                </header>
+                <form id="form-repair">
+                    <div class="form-group">
+                        <label for="rep-client">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                            Nombre del Cliente
+                        </label>
+                        <input type="text" id="rep-client" required placeholder="Ej: Consorci d'Educació">
+                    </div>
+                    <div class="form-group">
+                        <label for="rep-tech">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="8.5" cy="7" r="4" />
+                                <line x1="20" y1="8" x2="20" y2="14" />
+                                <line x1="23" y1="11" x2="17" y2="11" />
+                            </svg>
+                            Técnico Asignado
+                        </label>
+                        <select id="rep-tech" required>
+                            <option value="" disabled selected>Selecciona técnico...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="rep-problem">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 1 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                            </svg>
+                            Descripción Técnica
+                        </label>
+                        <textarea id="rep-problem" required
+                            placeholder="¿Qué le ocurre al equipo? Detalla el problema..."></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Registrar Entrada ✅</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Creation Form -->
+        <section id="create-screen" class="view">
+            <div class="form-container glass">
+                <header class="form-header">
+                    <button class="btn-back">← Volver</button>
+                    <h2>Nueva Creación de Equipo</h2>
+                    <div id="create-id-display" class="id-badge">...</div>
+                </header>
+                <form id="form-create">
+                    <div class="form-group">
+                        <label for="cre-client">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                            Nombre del Cliente
+                        </label>
+                        <input type="text" id="cre-client" required placeholder="Ej: Gerard Anta">
+                    </div>
+                    <div class="form-group">
+                        <label for="cre-tech">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="8.5" cy="7" r="4" />
+                                <line x1="20" y1="8" x2="20" y2="14" />
+                                <line x1="23" y1="11" x2="17" y2="11" />
+                            </svg>
+                            Técnico de Ensamblaje
+                        </label>
+                        <select id="cre-tech" required>
+                            <option value="" disabled selected>Selecciona técnico...</option>
+                        </select>
+                    </div>
+
+                    <!-- COMPONENTES BÁSICOS -->
+                    <div class="form-group">
+                        <label>Componentes Básicos</label>
+                        <div id="components-list">
+                            <div class="component-field">
+                                <div class="component-label">Placa Base</div>
+                                <input type="text" placeholder="NS / PN" name="placa-base">
+                            </div>
+                            <div class="component-field">
+                                <div class="component-label">CPU</div>
+                                <input type="text" placeholder="NS / PN" name="cpu">
+                            </div>
+                            <div class="component-field">
+                                <div class="component-label">RAM</div>
+                                <input type="text" placeholder="NS / PN" name="ram">
+                            </div>
+                            <div class="component-field">
+                                <div class="component-label">Caja</div>
+                                <input type="text" placeholder="NS / PN" name="caja">
+                            </div>
+                            <div class="component-field">
+                                <div class="component-label">PCI-e (Opcional)</div>
+                                <input type="text" placeholder="NS / PN" name="pcie">
+                            </div>
+                        </div>
+                        <button type="button" id="add-component" class="btn-secondary">+ Añadir Componente
+                            Personalizado</button>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Finalizar Creación de Equipo 🏗️</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- History Screen -->
+        <section id="history-screen" class="view">
+            <div class="form-container glass">
+                <header class="form-header">
+                    <button class="btn-back">← Volver</button>
+                    <h2>Historial de Registros</h2>
+                </header>
+
+                <div class="search-container">
+                    <input type="text" id="search-ref" placeholder="Buscar por REF (Ej: R-1001, C-5000)">
+                    <input type="text" id="history-client-filter" placeholder="Filtrar por cliente">
+                    <input type="text" id="history-tech-filter" placeholder="Filtrar por técnico">
+                    <input type="text" id="history-problem-filter" placeholder="Filtrar por problema">
+                    <select id="history-type-filter">
+                        <option value="">Todos los tipos</option>
+                        <option value="repair">Reparación</option>
+                        <option value="creation">Creación</option>
+                    </select>
+                    <select id="history-sort-filter">
+                        <option value="date_desc">Fecha (más reciente)</option>
+                        <option value="date_asc">Fecha (más antigua)</option>
+                        <option value="client">Cliente</option>
+                        <option value="technician">Técnico</option>
+                        <option value="problem">Problema</option>
+                    </select>
+                </div>
+
+                <div class="filter-actions">
+                    <button id="btn-search">🔍 Buscar</button>
+                    <button id="btn-clear-filters" type="button">🧹 Limpiar</button>
+                </div>
+
+                <div id="history-table-wrapper" class="history-table-wrapper">
+                    <table id="history-table" class="history-table">
+                        <thead>
+                            <tr>
+                                <th data-sort="id" class="sort-header">REF</th>
+                                <th data-sort="type" class="sort-header">Tipo</th>
+                                <th data-sort="client" class="sort-header">Cliente</th>
+                                <th data-sort="technician" class="sort-header">Técnico</th>
+                                <th data-sort="date" class="sort-header">Fecha</th>
+                                <th data-sort="problem" class="sort-header">Problema</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Registros cargados desde JS/PHP -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Modal de Edición -->
+        <div id="edit-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="modal-close">&times;</span>
+                <h2 id="edit-modal-title">Editar Registro</h2>
+                <form id="edit-form">
+                    <input type="hidden" id="edit-id">
+                    <input type="hidden" id="edit-type">
+                    <div class="form-group">
+                        <label for="edit-client">Cliente</label>
+                        <input type="text" id="edit-client" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-tech">Técnico</label>
+                        <select id="edit-tech" required></select>
+                    </div>
+                    <div id="edit-problem-group" class="form-group">
+                        <label for="edit-problem">Problema</label>
+                        <textarea id="edit-problem" required></textarea>
+                    </div>
+                    <div id="edit-components-group" class="form-group">
+                        <label>Componentes</label>
+                        <div id="edit-components-list"></div>
+                        <button type="button" id="edit-add-component">+ Añadir Componente</button>
+                    </div>
+                    <button type="submit" class="submit-btn">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Toast/Notification -->
+        <div id="toast" class="toast hidden">
+            <div class="toast-content">
+                <span id="toast-icon">✅</span>
+                <span id="toast-message">Registro guardado con éxito</span>
+            </div>
+        </div>
+
+        <!-- Hidden Print Area (Brother QL-570) -->
+        <div id="print-area" class="print-only">
+            <div class="print-label">
+                <div class="print-logo">MODUL4</div>
+                <h1 id="print-id">REF: R-1000</h1>
+                <p id="print-date">25/03/2026</p>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
