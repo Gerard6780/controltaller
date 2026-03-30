@@ -46,11 +46,12 @@ body {
 .view {
     flex: 1;
     display: none;
-    padding: 1rem 2rem;
+    padding: 0 2rem 2rem 2rem;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    justify-content: flex-start; /* Evita recortes en la parte superior */
+    overflow-y: auto; /* Permite scroll en la vista entera si el form es largo */
+    width: 100%;
 }
 
 .view.active {
@@ -241,107 +242,61 @@ body {
 
 /* Glass Form Styles */
 .form-container.glass {
-    background: rgba(13, 17, 23, 0.7);
+    background: rgba(13, 17, 23, 0.8);
     border: 1px solid rgba(204, 0, 0, 0.2);
     backdrop-filter: blur(50px);
     padding: 1.5rem;
     border-radius: 2.5rem;
-    width: 90%;
-    max-width: 900px;
-    max-height: none;
-    margin: 1rem auto;
+    width: 95%;
+    max-width: 960px;
+    margin: 2rem auto;
     box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6), 0 0 30px rgba(204, 0, 0, 0.05);
     animation: fadeInScale 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-    overflow-y: visible;
-}
-
-#history-screen .form-container.glass {
-    height: calc(100vh - 2rem);
-    overflow: hidden;
+    position: relative;
     display: flex;
     flex-direction: column;
 }
 
+#history-screen .form-container.glass {
+    height: 680px; /* Altura fija para TPV 768px descontando posibles márgenes */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+}
+
 #history-screen .form-header {
-    position: static;
-    z-index: 35;
-    background: rgba(13, 17, 23, 0.92);
-    padding-top: 0.8rem;
-    padding-bottom: 0.8rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    flex: 0 0 auto;
+    background: rgba(13, 17, 23, 0.95);
+    margin-bottom: 1rem;
+    padding: 1rem 1.5rem;
+    z-index: 40;
 }
 
 #history-screen .search-container {
-    position: sticky;
-    top: 0;
-    z-index: 32;
-    background: rgba(14, 23, 35, 0.95);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
+    flex: 0 0 auto;
+    background: rgba(15, 23, 42, 0.8);
+    margin-bottom: 0.5rem;
 }
 
 #history-screen .filter-actions {
-    position: sticky;
-    top: 70px;
-    z-index: 30;
-    background: rgba(14, 23, 35, 0.95);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    padding-top: 0.45rem;
-    padding-bottom: 0.45rem;
-    margin-bottom: 0;
+    flex: 0 0 auto;
+    margin-bottom: 0.5rem;
 }
 
 #history-screen .history-table-wrapper {
     flex: 1 1 auto;
     overflow-y: auto;
     width: 100%;
-}
-
-#history-screen .history-table {
-    width: 100%;
-    border-collapse: collapse;
+    border-radius: 0.5rem;
 }
 
 #history-screen .history-table thead th {
     position: sticky;
-    top: 120px;
-    background: rgba(8, 13, 18, 0.95);
-    z-index: 27;
-}
-
-
-#history-screen .history-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-#history-screen .history-table thead th {
-    position: sticky;
-    top: 116px;
-    background: rgba(8, 13, 18, 0.95);
-    z-index: 20;
-}
-
-
-#history-screen .history-table tr {
-    display: table;
-    width: 100%;
-    table-layout: fixed;
-}
-
-#history-screen .history-table th,
-#history-screen .history-table td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-#history-screen .history-table thead th {
-    position: sticky;
-    top: 56px;
-    background: rgba(8, 13, 18, 0.95);
-    z-index: 15;
+    top: 0;
+    background: #1e293b;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .search-container {
@@ -365,14 +320,14 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
     border-bottom: 1px solid var(--card-border);
-    padding-bottom: 1.5rem;
-    position: static;
-    top: auto;
-    z-index: auto;
-    background: rgba(13, 17, 23, 0.85);
-    backdrop-filter: blur(10px);
+    padding: 0.5rem 0 1.5rem 0;
+    position: sticky;
+    top: -1.5rem; /* Ajuste para compensar el padding del contenedor */
+    z-index: 100;
+    background: rgba(13, 17, 23, 0.95);
+    backdrop-filter: blur(20px);
 }
 
 .view {
