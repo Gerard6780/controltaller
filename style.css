@@ -46,11 +46,11 @@ body {
 .view {
     flex: 1;
     display: none;
-    padding: 0 2rem 2rem 2rem;
+    padding: 2rem; /* Espaciado uniforme */
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start; /* Evita recortes en la parte superior */
-    overflow-y: auto; /* Permite scroll en la vista entera si el form es largo */
+    justify-content: flex-start;
+    overflow-y: auto;
     width: 100%;
 }
 
@@ -245,11 +245,11 @@ body {
     background: rgba(13, 17, 23, 0.8);
     border: 1px solid rgba(204, 0, 0, 0.2);
     backdrop-filter: blur(50px);
-    padding: 1.5rem;
+    padding: 0 1.5rem 1.5rem 1.5rem; /* El padding superior lo maneja el header */
     border-radius: 2.5rem;
     width: 95%;
     max-width: 960px;
-    margin: 2rem auto;
+    margin: 0 auto;
     box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6), 0 0 30px rgba(204, 0, 0, 0.05);
     animation: fadeInScale 0.6s cubic-bezier(0.23, 1, 0.32, 1);
     position: relative;
@@ -322,12 +322,14 @@ body {
     align-items: center;
     margin-bottom: 2rem;
     border-bottom: 1px solid var(--card-border);
-    padding: 0.5rem 0 1.5rem 0;
+    padding: 1.5rem 0; /* Añadimos aquí el padding que quitamos del contenedor */
     position: sticky;
-    top: -1.5rem; /* Ajuste para compensar el padding del contenedor */
+    top: 0; /* Ahora se queda en el borde superior exacto */
     z-index: 100;
-    background: rgba(13, 17, 23, 0.95);
+    background: rgba(13, 17, 23, 0.98); /* Un poco más opaco para evitar transparencias raras */
     backdrop-filter: blur(20px);
+    border-top-left-radius: 1.5rem; /* Pequeño ajuste estético */
+    border-top-right-radius: 1.5rem;
 }
 
 .view {
