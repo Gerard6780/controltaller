@@ -97,10 +97,10 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             .is-zebra.mode-ref .barcode-svg { width: 95%; height: 100px; }
             .is-zebra.mode-ref .client-name { font-size: 36px; font-weight: bold; border-top: 4px solid #000; margin-top: 10px; padding-top: 5px; }
 
-            /* Ajustes para Brother (62x29) - Mucho más pequeños */
-            .is-brother.mode-ref .ref-id { font-size: 32px; font-weight: 900; line-height: 1; margin: 0; }
-            .is-brother.mode-ref .barcode-svg { width: 100%; height: 40px; margin: 2px 0; }
-            .is-brother.mode-ref .client-name { font-size: 14px; font-weight: bold; border-top: 1px solid #000; padding-top: 2px; }
+            /* Ajustes para Brother (62x29) - Mucho más equilibrados */
+            .is-brother.mode-ref .ref-id { font-size: 38px; font-weight: 950; letter-spacing: -1px; margin-bottom: -5px; }
+            .is-brother.mode-ref .barcode-svg { width: 220px; height: 35px; }
+            .is-brother.mode-ref .client-name { font-size: 16px; font-weight: 900; border-top: 2px solid #000; width: 90%; text-align: center; margin-top: 2px; }
 
             /* ESTILO MODO FULL (INFORME DETALLADO) */
             .header-banner { width: 100%; height: 20mm; text-align: center; margin-bottom: 2mm; }
@@ -209,8 +209,8 @@ if ($manualPrinter) {
         $results[] = processLabel($id, $record, 'ref', $PRINTER_BROTHER, 1);
         $results[] = processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
     } else {
-        // Creación: 2 Referencias en Zebra y 1 Informe con S/N también en Zebra
-        $results[] = processLabel($id, $record, 'ref', $PRINTER_ZEBRA, 2);
+        // Creación: 2 Referencias en Brother y 1 Informe con S/N en Zebra
+        $results[] = processLabel($id, $record, 'ref', $PRINTER_BROTHER, 2);
         $results[] = processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
     }
 }
