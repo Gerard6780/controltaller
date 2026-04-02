@@ -85,12 +85,12 @@ ob_start();
     body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; color: #000; background: #fff; width: 100%; }
     
     <?php if($isZebra): ?>
-    /* CAJA DE SEGURIDAD v2.10: 142mm centrados en 150mm */
+    /* CAJA DE SEGURIDAD v2.11: 142mm centrados con ligero desplazamiento a la derecha */
     .ticket-container { width: 150mm; height: 100mm; position: relative; }
     
     .ticket { 
         width: 142mm; height: 94mm; 
-        margin: 3mm auto; 
+        margin: 3mm 0 3mm 6mm; /* Desplazamos a la derecha: 6mm de margen izquierdo */
         padding: 4mm; box-sizing: border-box; 
         display: flex; flex-direction: column; 
         background: #fff;
@@ -154,6 +154,7 @@ ob_start();
                     <table class="data-table">
                         <tr><td class="lbl">CLIENTE:</td><td style="font-weight:800; font-size:17px;"><?php echo htmlspecialchars($record['client']); ?></td></tr>
                         <tr><td class="lbl">TÉCNICO:</td><td><?php echo htmlspecialchars($record['technician']); ?></td></tr>
+                        <tr><td class="lbl">FECHA:</td><td><?php echo date("d/m/Y H:i", strtotime($record['date'])); ?></td></tr>
                     </table>
                 </div>
             </div>
