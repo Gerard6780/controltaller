@@ -417,8 +417,7 @@ document.addEventListener('click', (e) => {
         deleteRecord(id, type);
     } else if (e.target.classList.contains('btn-print-ref')) {
         const id = e.target.getAttribute('data-id');
-        const printer = id.startsWith('R-') ? 'ql-570' : 'gk420d';
-        printLabel(id, printer, 1, 'ref');
+        printLabel(id, 'ql-570', 1, 'ref');
     } else if (e.target.classList.contains('btn-print')) {
         const id = e.target.getAttribute('data-id');
         printLabel(id, 'gk420d', 1, 'full');

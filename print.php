@@ -154,8 +154,7 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                     <?php endif; ?>
                 </div>
                 <div class="footer-strip">
-                    <span style="font-size:10px; font-weight:bold;">v2.26 PRO</span>
-                    <div class="signature">FIRMA DE RECEPCIÓN</div>
+                    <span style="font-size:10px; font-weight:bold;">v2.27 PRO</span>
                 </div>
 <?php endif; ?>
         </div>
