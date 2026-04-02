@@ -72,10 +72,10 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
     // Configuración según impresora objetivo
     if ($targetPrinter === 'GK420d') {
         $w = '150mm'; $h = '100mm'; $pageSize = '100x150mm'; $dpi = 203;
-        $lpOptions = "-o scaling=100 -o orientation-requested=4 -n $copies -o PageSize=Custom.$pageSize";
+        $lpOptions = "-o scaling=100 -o orientation-requested=4 -n $copies -o PageSize=$pageSize";
     } else {
         $w = '62mm'; $h = '29mm'; $pageSize = '62x29mm'; $dpi = 203;
-        $lpOptions = "-o scaling=100 -n $copies -o PageSize=Custom.$pageSize";
+        $lpOptions = "-o scaling=100 -n $copies -o PageSize=$pageSize";
     }
 
     ob_start();
@@ -89,10 +89,18 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #000; }
             .ticket { width: 100%; height: 100%; padding: 3mm; box-sizing: border-box; display: flex; flex-direction: column; }
             
-            /* ESTILO MODO REFERENCIA (SIN BANNER, TODO GIGANTE) */
-            .mode-ref .ref-id { font-size: 70px; font-weight: 900; line-height: 0.9; margin: 0; padding: 0; }
-            .mode-ref .client-name { font-size: 32px; font-weight: 800; margin-top: 5px; border-top: 3px solid #000; display: inline-block; padding-top: 5px; }
-            .mode-ref .barcode-svg { width: 90%; height: 80px; }
+            /* ESTILO MODO REFERENCIA (SIN BANNER) */
+            .mode-ref { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+            
+            /* Ajustes para Zebra (150x100) */
+            .is-zebra.mode-ref .ref-id { font-size: 80px; font-weight: 900; line-height: 1; }
+            .is-zebra.mode-ref .barcode-svg { width: 95%; height: 100px; }
+            .is-zebra.mode-ref .client-name { font-size: 36px; font-weight: bold; border-top: 4px solid #000; margin-top: 10px; padding-top: 5px; }
+
+            /* Ajustes para Brother (62x29) - Mucho más pequeños */
+            .is-brother.mode-ref .ref-id { font-size: 32px; font-weight: 900; line-height: 1; margin: 0; }
+            .is-brother.mode-ref .barcode-svg { width: 100%; height: 40px; margin: 2px 0; }
+            .is-brother.mode-ref .client-name { font-size: 14px; font-weight: bold; border-top: 1px solid #000; padding-top: 2px; }
 
             /* ESTILO MODO FULL (INFORME DETALLADO) */
             .header-banner { width: 100%; height: 20mm; text-align: center; margin-bottom: 2mm; }
@@ -111,14 +119,13 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             .footer-strip { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
         </style>
     </head>
-    <body class="mode-<?php echo $mode; ?>">
+    <body class="mode-<?php echo $mode; ?> <?php echo ($targetPrinter === 'GK420d' ? 'is-zebra' : 'is-brother'); ?>">
         <div class="ticket">
             <?php if ($mode === 'ref'): ?>
                 <div style="text-align:center; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
                     <div class="ref-id"><?php echo $id; ?></div>
                     <svg id="barcode" class="barcode-svg"></svg>
                     <div class="client-name"><?php echo htmlspecialchars($record['client']); ?></div>
-                    <div style="font-size:12px; margin-top:5px; font-weight:bold;">MODUL 4 - REF INTERNA</div>
                 </div>
             <?php else: ?>
                 <div class="header-banner">
@@ -163,7 +170,11 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
         </div>
         <script>
             JsBarcode("#barcode", "<?php echo addslashes($id); ?>", {
-                format: "CODE128", displayValue: false, height: 60, margin: 0
+                format: "CODE128", 
+                displayValue: false, 
+                height: <?php echo ($mode === 'ref' ? ($targetPrinter === 'GK420d' ? 100 : 45) : 60); ?>,
+                width: <?php echo ($targetPrinter === 'GK420d' ? 3 : 2); ?>,
+                margin: 0
             });
         </script>
     </body>
