@@ -99,6 +99,18 @@ body {
     justify-content: center;
 }
 
+.app-version {
+    position: fixed;
+    bottom: 12px;
+    right: 20px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    opacity: 0.35;
+    letter-spacing: 0.05rem;
+    pointer-events: none;
+    font-weight: 500;
+}
+
 .brand-logo {
     height: 80px;
     width: auto;
