@@ -103,8 +103,8 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             .header-banner { width: 100%; height: 18mm; text-align: center; }
             .header-info { display: flex; justify-content: space-between; border-bottom: 5px solid #000; padding-bottom: 5px; }
             .title-full { font-size: 26px; font-weight: 900; }
-            .body-full { display: flex; gap: 8mm; margin-top: 5px; align-items: center; }
-            .id-full { font-size: 44px; font-weight: 900; }
+            .body-full { display: flex; gap: 4mm; margin-top: 5px; align-items: center; }
+            .id-full { font-size: 40px; font-weight: 900; }
             .inf-box { margin-top: 5px; border: 4px solid #000; padding: 10px; flex-grow: 1; border-radius: 5px; position: relative; }
             .inf-tag { position: absolute; top: -14px; left: 15px; background: #fff; padding: 0 10px; font-size: 14px; font-weight: 900; border: 2px solid #000; }
             
@@ -112,7 +112,7 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             .comp-table td { border: 1px solid #000; padding: 5px; font-size: 14px; font-weight: bold; }
             .comp-header { background: #eee; font-weight: 900; width: 35%; }
 
-            .footer-strip { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; }
+            .footer-strip { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
             .signature { width: 280px; text-align: center; border-top: 4px solid #000; font-weight: 900; font-size: 18px; padding-top: 4px; }
         </style>
     </head>
@@ -128,14 +128,14 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                 </div>
                 <div class="header-info">
                     <div class="title-full"><?php echo ($type==='repair' ? 'ORDEN DE TRABAJO' : 'MONTAJE EQUIPO'); ?></div>
-                    <div style="font-size: 20px; font-weight: bold;"><?php echo date("d/m/Y"); ?></div>
+                    <div style="font-size: 18px; font-weight: bold;"><?php echo date("d/m/Y"); ?></div>
                 </div>
                 <div class="body-full">
                     <div style="text-align:center;">
-                        <svg id="barcode" style="width:260px; height:60px;"></svg>
+                        <svg id="barcode" style="width:240px; height:60px;"></svg>
                         <div class="id-full"><?php echo $id; ?></div>
                     </div>
-                    <div style="flex:1; font-size:22px;">
+                    <div style="flex:1; font-size:20px;">
                         <b>CLIENTE:</b> <?php echo htmlspecialchars($record['client']); ?><br>
                         <b>TÉCNICO:</b> <?php echo htmlspecialchars($record['technician']); ?>
                     </div>
@@ -143,7 +143,7 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                 <div class="inf-box">
                     <div class="inf-tag"><?php echo ($type==='repair' ? 'AVERÍA DECLARADA' : 'COMPONENTES Y/O S/N'); ?></div>
                     <?php if($type === 'repair'): ?>
-                        <div style="font-size:20px; font-weight:900; line-height: 1.2;"><?php echo nl2br(htmlspecialchars($record['problem'])); ?></div>
+                        <div style="font-size:18px; font-weight:900; line-height: 1.1;"><?php echo nl2br(htmlspecialchars($record['problem'])); ?></div>
                     <?php else: ?>
                         <table class="comp-table">
                             <?php foreach($record['components'] as $comp): ?>
@@ -156,7 +156,7 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                     <?php endif; ?>
                 </div>
                 <div class="footer-strip">
-                    <span style="font-size:10px; font-weight:bold;">v2.30 PRO Sync</span>
+                    <span style="font-size:10px; font-weight:bold;">v2.31 Final PRO</span>
                 </div>
 <?php endif; ?>
         </div>
@@ -178,7 +178,7 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
     $htmlFile = "/tmp/p_{$id}_{$mode}_{$uid}.html";
     file_put_contents($htmlFile, $html);
     
-    exec("wkhtmltopdf --dpi $dpi --page-width $w --page-height $h --margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 " . escapeshellarg($htmlFile) . " " . escapeshellarg($pdfFile));
+    exec("wkhtmltopdf --dpi $dpi --page-width $w --page-height $h --margin-top 0 --margin-bottom 0 --margin-left 2 --margin-right 2 " . escapeshellarg($htmlFile) . " " . escapeshellarg($pdfFile));
     
     exec("lp -d " . escapeshellarg($targetPrinter) . " $lpOptions " . escapeshellarg($pdfFile));
     
