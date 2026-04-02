@@ -420,7 +420,7 @@ document.addEventListener('click', (e) => {
         printLabel(id, 'ql-570', 1, 'ref');
     } else if (e.target.classList.contains('btn-print')) {
         const id = e.target.getAttribute('data-id');
-        printLabel(id, 'gk420d', 1, 'full');
+        printLabel(id); // Dispara el flujo automático (Ref + Informe) v2.29
     }
 });
 
