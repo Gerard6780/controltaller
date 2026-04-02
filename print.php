@@ -1,7 +1,8 @@
 <?php
 /**
- * MODUL4 - Linux Print Proxy for CUPS (v2.13 Hi-Res)
- * Escalado a 300 DPI para máxima calidad y ocupación total.
+ * MODUL4 - Linux Print Proxy for CUPS (v2.14 Precision)
+ * Ajuste de 148x98mm para evitar saltos de página entre etiquetas.
+ * v2.14 PRO.
  */
 
 header('Content-Type: application/json');
@@ -69,10 +70,10 @@ if (file_exists($logoPath)) {
     $logoBase64 = base64_encode(file_get_contents($logoPath));
 }
 
-// --- 4. CONFIGURACIÓN PÁGINA ---
+// --- 4. CONFIGURACIÓN PÁGINA (v2.14: 148x98 para seguridad) ---
 $isZebra = ($printer === 'gk420d');
-$w = $isZebra ? '150mm' : '62mm'; 
-$h = $isZebra ? '100mm' : '29mm';
+$w = $isZebra ? '148mm' : '62mm'; 
+$h = $isZebra ? '98mm' : '29mm';
 
 ob_start();
 ?>
@@ -81,41 +82,43 @@ ob_start();
 <meta charset='UTF-8'>
 <script src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'></script>
 <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; color: #000; background: #fff; width: 100%; height: 100%; overflow: hidden; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #fff; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #000; }
     
     <?php if($isZebra): ?>
     .ticket { 
-        width: 150mm; height: 100mm; padding: 3mm; box-sizing: border-box; 
+        width: 148mm; height: 98mm; padding: 4mm; box-sizing: border-box; 
         display: flex; flex-direction: column; 
         justify-content: space-between; 
+        overflow: hidden;
     }
     
-    .header-banner { width: 100%; text-align: center; height: 21mm; overflow: hidden; }
+    .header-banner { width: 100%; text-align: center; height: 20mm; overflow: hidden; }
     .banner-img { width: 100%; height: 100%; object-fit: contain; }
 
-    .meta-row { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2.5px solid #000; padding-bottom: 2px; margin-bottom: 2mm; }
-    .meta-title { font-size: 18px; font-weight: 800; color: #cc0000; text-transform: uppercase; }
+    .meta-row { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #000; padding-bottom: 2px; }
+    .meta-title { font-size: 17px; font-weight: 800; color: #cc0000; text-transform: uppercase; }
     .meta-date { font-size: 11px; font-weight: bold; }
 
-    .main-body { display: flex; gap: 8mm; }
+    .main-body { display: flex; gap: 8mm; margin-top: 1mm; }
     .barcode-col { flex: 0 0 55mm; text-align: center; }
     #barcode { width: 100%; height: 50px; }
-    .ref-id { font-size: 40px; font-weight: 900; margin-top: 1px; }
+    .ref-id { font-size: 38px; font-weight: 900; margin-top: 2px; }
 
     .data-col { flex: 1; font-size: 14px; }
     .data-table { width: 100%; border-collapse: collapse; }
-    .data-table td { padding: 4px 0; border-bottom: 1.2px dotted #777; }
+    .data-table td { padding: 4px 0; border-bottom: 1px dotted #888; }
     .lbl { font-weight: bold; width: 90px; color: #333; }
     
     .details-box { 
-        margin-top: 3mm; border: 2px solid #000; padding: 10px; 
-        position: relative; border-radius: 4px; flex-grow: 1;
+        margin-top: 2mm; border: 1.5px solid #000; padding: 8px; 
+        position: relative; border-radius: 4px; flex-grow: 1; min-height: 20mm;
     }
     .details-tag { position: absolute; top: -10px; left: 10px; background: #fff; padding: 0 5px; font-size: 10px; font-weight: 900; text-transform: uppercase; border: 1px solid #000; border-radius: 2px; }
-    .details-content { font-size: 13px; line-height: 1.5; color: #000; }
+    .details-content { font-size: 12px; line-height: 1.5; color: #000; overflow: hidden; }
 
-    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4mm; }
-    .signature { width: 280px; text-align: center; border-top: 2.5px solid #000; padding-top: 5px; font-weight: 900; font-size: 15px; }
+    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 3mm; }
+    .signature { width: 280px; text-align: center; border-top: 2.5px solid #000; padding-top: 4px; font-weight: 900; font-size: 14px; }
     
     <?php else: ?>
     .ticket-brother { width: 62mm; height: 29mm; padding: 3px; box-sizing: border-box; text-align: center; }
@@ -136,7 +139,7 @@ ob_start();
 
             <div class="meta-row">
                 <div class="meta-title">Parte de Entrada Servicio Técnico</div>
-                <div class="meta-date">v2.13 | <?php echo date("d/m/Y H:i", strtotime($record['date'])); ?></div>
+                <div class="meta-date">v2.14 | <?php echo date("d/m/Y H:i", strtotime($record['date'])); ?></div>
             </div>
 
             <div class="main-body">
@@ -148,14 +151,14 @@ ob_start();
                     <table class="data-table">
                         <tr><td class="lbl">CLIENTE:</td><td style="font-weight:900; font-size:18px;"><?php echo htmlspecialchars($record['client']); ?></td></tr>
                         <tr><td class="lbl">TÉCNICO:</td><td><?php echo htmlspecialchars($record['technician']); ?></td></tr>
-                        <tr><td class="lbl">FECHA:</td><td><?php echo date("d/m/Y H:i"); ?></td></tr>
+                        <tr><td class="lbl">FECHA:</td><td><?php echo date("d/m/Y"); ?></td></tr>
                     </table>
                 </div>
             </div>
         </div>
 
         <div class="details-box">
-            <div class="details-tag"><?php echo ($type === 'repair') ? 'Fallo Reportado' : 'Componentes'; ?></div>
+            <div class="details-tag"><?php echo ($type === 'repair') ? 'Informe' : 'Componentes'; ?></div>
             <div class="details-content">
                 <?php if($type === 'repair'): ?>
                     <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
@@ -170,7 +173,7 @@ ob_start();
         </div>
 
         <div class="footer">
-            <div style="font-size: 10px; opacity:0.6; font-weight:bold;">SISTEMA CONTROL MODUL 4 v2.13</div>
+            <div style="font-size: 10px; opacity:0.6; font-weight:bold;">MODUL 4 TRABAJO v2.14</div>
             <div class="signature">FIRMA CONFORMIDAD CLIENTE</div>
         </div>
     </div>
@@ -194,11 +197,10 @@ $html = ob_get_clean();
 
 // --- 5. PRODUCCIÓN PDF ---
 $uid = uniqid();
-$htmlFile = "/tmp/hires_$uid.html";
-$pdfFile = "/tmp/hires_$uid.pdf";
+$htmlFile = "/tmp/prec_$uid.html";
+$pdfFile = "/tmp/prec_$uid.pdf";
 file_put_contents($htmlFile, $html);
 
-// v2.13: Incremento a 300 DPI para máxima calidad y escalado preciso.
 $cmdPdf = "wkhtmltopdf --enable-javascript --javascript-delay 300 "
         . "--viewport-size 1280x800 --disable-smart-shrinking --dpi 300 "
         . "--page-width $w --page-height $h "
@@ -215,6 +217,7 @@ if ($retPdf !== 0) {
 
 // --- 6. ENVÍO A COLA ---
 $dest = ($printer === 'gk420d') ? 'GK420d' : 'QL-570';
+// Importante: PageSize sigue siendo 100x150 porque es el papel físico, pero el PDF es de 148x98.
 $options = ($printer === 'gk420d') ? "-o orientation-requested=4 -o PageSize=Custom.100x150mm" : "";
 
 $cmdPrint = "lp -d " . escapeshellarg($dest) . " $options " . escapeshellarg($pdfFile) . " 2>&1";
@@ -224,7 +227,7 @@ exec($cmdPrint, $outT, $retT);
 @unlink($htmlFile); @unlink($pdfFile);
 
 if ($retT === 0) {
-    echo json_encode(['status' => 'success', 'id' => $id, 'printer' => $dest, 'debug' => 'v2.13 Hi-Res OK']);
+    echo json_encode(['status' => 'success', 'id' => $id, 'printer' => $dest, 'debug' => 'v2.14 Precision OK']);
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Error LP', 'debug' => $outT]);
 }
