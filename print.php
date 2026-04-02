@@ -187,9 +187,9 @@ if ($manualPrinter) {
         processLabel($id, $record, 'ref', $PRINTER_BROTHER, 1);
         processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
     } else {
-        processLabel($id, $record, 'ref', $PRINTER_BROTHER, 2);
+        processLabel($id, $record, 'ref', $PRINTER_BROTHER, 1);
         processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
     }
 }
 
-echo json_encode(['status' => 'success', 'v' => '2.32', 'printer_used' => ($manualPrinter ?? 'AUTO')]);
+echo json_encode(['status' => 'success', 'v' => '2.37', 'printer_used' => ($manualPrinter ?? 'AUTO')]);
