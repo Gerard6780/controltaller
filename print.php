@@ -68,8 +68,9 @@ $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath
 function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
     global $logoBase64, $type;
     
+    // Configuración de dimensiones
     if ($targetPrinter === 'GK420d') {
-        $w = '150mm'; $h = '100mm'; $pageSize = '100x150mm'; $dpi = 203;
+        $w = '100mm'; $h = '150mm'; $pageSize = '100x150mm'; $dpi = 203;
     } else {
         $w = '62mm'; $h = '29mm'; $pageSize = '62x29mm'; $dpi = 203;
     }
@@ -98,7 +99,7 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             .header-info { display: flex; justify-content: space-between; border-bottom: 5px solid #000; }
             .title-full { font-size: 28px; font-weight: 900; }
             .body-full { display: flex; gap: 5mm; margin-top: 5px; align-items: center; }
-            .id-full { font-size: 48px; font-weight: 900; }
+            .id-full { font-size: 18px; font-weight: 900; border: 1px solid #ddd; padding: 2px; } /* ID reducido en Full */
             .inf-box { margin-top: 5px; border: 4px solid #000; padding: 10px; flex-grow: 1; border-radius: 5px; position: relative; }
             .inf-tag { position: absolute; top: -12px; left: 15px; background: #fff; padding: 0 5px; font-size: 14px; font-weight: 900; }
             
@@ -124,7 +125,7 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                 <div class="body-full">
                     <div style="text-align:center;">
                         <svg id="barcode" style="width:250px; height:60px;"></svg>
-                        <div class="id-full"><?php echo $id; ?></div>
+                        <div style="font-size: 32px; font-weight: 1000;"><?php echo $id; ?></div>
                     </div>
                     <div style="font-size:22px; flex:1;">
                         <b>CLIENTE:</b> <?php echo htmlspecialchars($record['client']); ?><br>
@@ -162,19 +163,15 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
     </html>
     <?php
     $html = ob_get_clean();
-    $pdfFile = "/tmp/p_{$id}_$mode.pdf";
-    $htmlFile = "/tmp/p_{$id}_$mode.html";
+    $uid = uniqid();
+    $pdfFile = "/tmp/p_{$id}_{$mode}_{$uid}.pdf";
+    $htmlFile = "/tmp/p_{$id}_{$mode}_{$uid}.html";
     file_put_contents($htmlFile, $html);
     
     exec("wkhtmltopdf --dpi $dpi --page-width $w --page-height $h --margin-top 0 --margin-bottom 0 --margin-left 2 --margin-right 2 " . escapeshellarg($htmlFile) . " " . escapeshellarg($pdfFile));
     
-    if ($targetPrinter === 'GK420d') {
-        $w = '100mm'; $h = '150mm'; $pageSize = '100x150mm'; $dpi = 203;
-        $lpOptions = "-o scaling=100 -o orientation-requested=3 -n $copies -o PageSize=$pageSize";
-    } else {
-        $w = '62mm'; $h = '29mm'; $pageSize = '62x29mm'; $dpi = 203;
-        $lpOptions = "-o scaling=100 -o orientation-requested=3 -n $copies -o PageSize=$pageSize";
-    }
+    $lpOptions = "-o scaling=100 -o orientation-requested=3 -n $copies -o PageSize=$pageSize";
+    exec("lp -d " . escapeshellarg($targetPrinter) . " $lpOptions " . escapeshellarg($pdfFile));
     
     @unlink($htmlFile); @unlink($pdfFile);
     return true;
