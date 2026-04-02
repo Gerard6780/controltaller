@@ -1,33 +1,34 @@
 <?php
 /**
- * MODUL4 - Linux Print Proxy for CUPS (v2.20 Diagnostic)
- * Reporte extendido de errores de sistema para depuración en CUPS.
- * v2.20 PRO.
+ * MODUL 4 - SISTEMA DE IMPRESIÓN DUAL PROFESIONAL (v2.22)
+ * Flujo de trabajo automatizado según el tipo de registro.
  */
 
 header('Content-Type: application/json');
 
-// --- 1. SOPORTE CLI / WEB ---
-if (php_sapi_name() === 'cli') {
-    $id = isset($argv[1]) ? $argv[1] : null;
-    $printer = isset($argv[2]) ? strtolower($argv[2]) : 'ql570';
-} else {
-    $id = isset($_GET['id']) ? $_GET['id'] : null;
-    $printer = isset($_GET['printer']) ? strtolower($_GET['printer']) : 'ql570';
-}
-
-if (!$id) {
-    echo json_encode(['status' => 'error', 'message' => 'No ID provided.']);
-    exit;
-}
-
-// --- 2. CONFIGURACIÓN BD ---
+// --- 1. CONFIGURACIÓN INICIAL ---
 $host = 'localhost';
 $db = 'tpv_db';
 $user = 'tecnicos';
 $pass = 'Nfa8uku4';
 $charset = 'utf8mb4';
 
+// Impresoras Configuradas en CUPS
+$PRINTER_ZEBRA = 'GK420d';
+$PRINTER_BROTHER = 'QL-570';
+
+// --- 2. CAPTURA DE PARÁMETROS ---
+$id = $_GET['id'] ?? null;
+$manualPrinter = $_GET['printer'] ?? null; // Para re-impresión individual
+$manualMode = $_GET['mode'] ?? 'full';     // 'ref' o 'full'
+$manualCopies = $_GET['copies'] ?? 1;
+
+if (!$id) {
+    echo json_encode(['status' => 'error', 'message' => 'No se especificó la ID del registro.']);
+    exit;
+}
+
+// --- 3. CONEXIÓN Y DATOS ---
 try {
     $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
     $pdo = new PDO($dsn, $user, $pass, [
@@ -35,8 +36,8 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
 
-    $record = null;
     $type = (strpos($id, 'R-') === 0) ? 'repair' : 'creation';
+    $record = null;
 
     if ($type === 'repair') {
         $stmt = $pdo->prepare("SELECT * FROM repairs WHERE id = ?");
@@ -53,168 +54,154 @@ try {
         }
     }
 
-    if (!$record) {
-        throw new Exception("ID no encontrado.");
-    }
+    if (!$record) throw new Exception("Registro no encontrado en la base de datos.");
+
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => 'Error BD: ' . $e->getMessage()]);
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
     exit;
 }
 
-// --- 3. PROCESAR BANNER ---
+// --- 4. CARGAR BANNER (LOGO) ---
 $logoPath = __DIR__ . '/images/m4bannerblack.png';
-$logoBase64 = "";
-if (file_exists($logoPath)) {
-    $logoBase64 = base64_encode(file_get_contents($logoPath));
-}
+$logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : "";
 
-// --- 4. CONFIGURACIÓN PÁGINA (v2.20) ---
-$isZebra = ($printer === 'gk420d');
-$w = $isZebra ? '150mm' : '62mm'; 
-$h = $isZebra ? '100mm' : '29mm';
-
-ob_start();
-?>
-<html>
-<head>
-<meta charset='UTF-8'>
-<script src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'></script>
-<style>
-    html, body { margin: 0; padding: 0; background: #fff; width: 100%; height: 100%; overflow: hidden; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; }
+// --- 5. FUNCIÓN CORE: GENERAR Y ENVIAR A COLA ---
+function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
+    global $logoBase64, $type;
     
-    <?php if($isZebra): ?>
-    .ticket { 
-        width: 100%; height: 100%; padding: 4mm; box-sizing: border-box; 
-        display: flex; flex-direction: column; justify-content: space-between; 
+    // Configuración según impresora objetivo
+    if ($targetPrinter === 'GK420d') {
+        $w = '150mm'; $h = '100mm'; $pageSize = '100x150mm'; $dpi = 203;
+        $lpOptions = "-o scaling=100 -o orientation-requested=4 -n $copies -o PageSize=Custom.$pageSize";
+    } else {
+        $w = '62mm'; $h = '29mm'; $pageSize = '62x29mm'; $dpi = 203;
+        $lpOptions = "-o scaling=100 -n $copies -o PageSize=Custom.$pageSize";
     }
-    .header-banner { width: 100%; text-align: center; height: 22mm; overflow: hidden; margin-bottom: 3mm; }
-    .banner-img { width: 100%; height: 100%; object-fit: contain; }
-    .meta-row { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3.5px solid #000; padding-bottom: 4px; }
-    .meta-title { font-size: 24px; font-weight: 900; color: #cc0000; text-transform: uppercase; }
-    .meta-date { font-size: 15px; font-weight: bold; }
-    .main-body { display: flex; gap: 10mm; margin-top: 3mm; }
-    .barcode-col { flex: 0 0 65mm; text-align: center; }
-    #barcode { width: 100%; height: 65px; }
-    .ref-id { font-size: 48px; font-weight: 900; margin-top: 2px; }
-    .data-col { flex:1; font-size: 20px; }
-    .data-table { width: 100%; border-collapse: collapse; }
-    .data-table td { padding: 6px 0; border-bottom: 2px dotted #444; }
-    .lbl { font-weight: bold; width: 110px; color: #111; }
-    .details-box { margin-top: 4mm; border: 3px solid #000; padding: 15px; position: relative; border-radius: 6px; flex-grow: 1; }
-    .details-tag { position: absolute; top: -14px; left: 20px; background: #fff; padding: 0 10px; font-size: 13px; font-weight: 900; text-transform: uppercase; border: 2px solid #000; }
-    .details-content { font-size: 17px; line-height:1.6; color:#000; font-weight:600; }
-    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4mm; }
-    .signature { width: 320px; text-align: center; border-top: 4px solid #000; padding-top: 6px; font-weight: 900; font-size: 19px; }
-    
-    <?php else: ?>
-    .ticket-brother { width: 62mm; height: 29mm; padding: 3px; box-sizing: border-box; text-align: center; }
-    #barcode { width: 90%; height: 40px; margin: 0 auto; }
-    <?php endif; ?>
-</style>
-</head>
-<body>
 
-<?php if($isZebra): ?>
-    <div class="ticket">
-        <div class="header-container">
-            <div class="header-banner">
-                <?php if($logoBase64): ?><img src="data:image/png;base64,<?php echo $logoBase64; ?>" class="banner-img"><?php endif; ?>
-            </div>
-            <div class="meta-row">
-                <div class="meta-title">ORDEN DE TRABAJO v2.20</div>
-                <div class="meta-date">REG: <?php echo date("d/m/Y", strtotime($record['date'])); ?> | <?php echo date("H:i"); ?></div>
-            </div>
-            <div class="main-body">
-                <div class="barcode-col">
-                    <svg id="barcode"></svg>
-                    <div class="ref-id"><?php echo htmlspecialchars($id); ?></div>
+    ob_start();
+    ?>
+    <html>
+    <head>
+        <meta charset='UTF-8'>
+        <script src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'></script>
+        <style>
+            html, body { margin: 0; padding: 0; background: #fff; width: 100%; height: 100%; overflow: hidden; }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #000; }
+            .ticket { width: 100%; height: 100%; padding: 3mm; box-sizing: border-box; display: flex; flex-direction: column; }
+            
+            /* ESTILO MODO REFERENCIA (SIN BANNER, TODO GIGANTE) */
+            .mode-ref .ref-id { font-size: 70px; font-weight: 900; line-height: 0.9; margin: 0; padding: 0; }
+            .mode-ref .client-name { font-size: 32px; font-weight: 800; margin-top: 5px; border-top: 3px solid #000; display: inline-block; padding-top: 5px; }
+            .mode-ref .barcode-svg { width: 90%; height: 80px; }
+
+            /* ESTILO MODO FULL (INFORME DETALLADO) */
+            .header-banner { width: 100%; height: 20mm; text-align: center; margin-bottom: 2mm; }
+            .banner-img { width: 100%; height: 100%; object-fit: contain; }
+            .header-info { display: flex; justify-content: space-between; border-bottom: 4px solid #000; padding-bottom: 2px; }
+            .title-full { font-size: 26px; font-weight: 900; color: #cc0000; letter-spacing: -1px; }
+            .date-full { font-size: 18px; font-weight: bold; }
+            .body-full { display: flex; gap: 8mm; margin-top: 3mm; align-items: center; }
+            .barcode-full { text-align: center; border: 2px solid #ddd; padding: 5px; border-radius: 5px; }
+            .id-full { font-size: 44px; font-weight: 900; }
+            .details-full { flex: 1; font-size: 22px; font-weight: 600; }
+            .details-full table { width: 100%; }
+            .inf-box { margin-top: 4mm; border: 4px solid #000; padding: 15px; flex-grow: 1; border-radius: 8px; position: relative; }
+            .inf-tag { position: absolute; top: -14px; left: 20px; background: #fff; padding: 0 10px; font-size: 14px; font-weight: 900; border: 3px solid #000; }
+            .inf-text { font-size: 18px; line-height: 1.4; font-weight: 600; color: #111; }
+            .footer-strip { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
+        </style>
+    </head>
+    <body class="mode-<?php echo $mode; ?>">
+        <div class="ticket">
+            <?php if ($mode === 'ref'): ?>
+                <div style="text-align:center; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                    <div class="ref-id"><?php echo $id; ?></div>
+                    <svg id="barcode" class="barcode-svg"></svg>
+                    <div class="client-name"><?php echo htmlspecialchars($record['client']); ?></div>
+                    <div style="font-size:12px; margin-top:5px; font-weight:bold;">MODUL 4 - REF INTERNA</div>
                 </div>
-                <div class="data-col">
-                    <table class="data-table">
-                        <tr><td class="lbl">CLIENTE:</td><td style="font-weight:900; font-size:24px;"><?php echo htmlspecialchars($record['client']); ?></td></tr>
-                        <tr><td class="lbl">TÉCNICO:</td><td><?php echo htmlspecialchars($record['technician']); ?></td></tr>
-                        <tr><td class="lbl">CONTROL:</td><td>MODUL 4 TALLER</td></tr>
-                    </table>
+            <?php else: ?>
+                <div class="header-banner">
+                    <?php if($logoBase64): ?><img src="data:image/png;base64,<?php echo $logoBase64; ?>" class="banner-img"><?php endif; ?>
                 </div>
-            </div>
-        </div>
-        <div class="details-box">
-            <div class="details-tag">INFORME DE ENTIDADES</div>
-            <div class="details-content">
-                <?php if($type === 'repair'): ?>
-                    <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
-                <?php else: ?>
-                    <div style="column-count: 2; font-size: 11px; font-weight:bold;">
-                        <?php foreach($record['components'] as $comp): ?>
-                            <div>• <strong><?php echo htmlspecialchars($comp['component_label']); ?>:</strong> <?php echo htmlspecialchars($comp['component_value']); ?></div>
-                        <?php endforeach; ?>
+                <div class="header-info">
+                    <div class="title-full"><?php echo ($type==='repair' ? 'ORDEN DE REPARACIÓN' : 'SISTEMA A MEDIDA'); ?></div>
+                    <div class="date-full"><?php echo date("d/m/Y", strtotime($record['date'])); ?></div>
+                </div>
+                <div class="body-full">
+                    <div class="barcode-full">
+                        <svg id="barcode" style="width:100%; height:60px;"></svg>
+                        <div class="id-full"><?php echo $id; ?></div>
                     </div>
-                <?php endif; ?>
-            </div>
+                    <div class="details-full">
+                        <table>
+                            <tr><td><b>CLIENTE:</b></td><td><?php echo htmlspecialchars($record['client']); ?></td></tr>
+                            <tr><td><b>TÉCNICO:</b></td><td><?php echo htmlspecialchars($record['technician']); ?></td></tr>
+                            <tr><td><b>ESTADO:</b></td><td>PENDIENTE</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="inf-box">
+                    <div class="inf-tag"><?php echo ($type==='repair' ? 'AVERÍA DECLARADA' : 'COMPONENTES Y NÚMEROS DE SERIE'); ?></div>
+                    <div class="inf-text">
+                        <?php if($type === 'repair'): ?>
+                            <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
+                        <?php else: ?>
+                            <div style="column-count: 2; font-size: 11px;">
+                                <?php foreach($record['components'] as $comp): ?>
+                                    <div>• <b><?php echo htmlspecialchars($comp['component_label']); ?>:</b> <?php echo htmlspecialchars($comp['component_value']); ?></div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="footer-strip">
+                    <span style="font-size:11px; font-weight:bold;">M4 TPV System v2.22</span>
+                    <div style="width:280px; text-align:center; border-top:4px solid #000; font-weight:900; font-size:18px; padding-top:4px;">FIRMA DE RECEPCIÓN</div>
+                </div>
+            <?php endif; ?>
         </div>
-        <div class="footer">
-            <div style="font-size: 12px; font-weight:bold; color:#cc0000;">MODUL 4 TALLER v2.20</div>
-            <div class="signature">FIRMA CONFORMIDAD CLIENTE</div>
-        </div>
-    </div>
-<?php else: ?>
-    <div class="ticket-brother">
-        <div style="font-weight:900; font-size:22px;">REF: <?php echo htmlspecialchars($id); ?></div>
-        <svg id="barcode"></svg>
-    </div>
-<?php endif; ?>
+        <script>
+            JsBarcode("#barcode", "<?php echo addslashes($id); ?>", {
+                format: "CODE128", displayValue: false, height: 60, margin: 0
+            });
+        </script>
+    </body>
+    </html>
+    <?php
+    $html = ob_get_clean();
+    $uid = uniqid();
+    $htmlFile = "/tmp/print_{$mode}_{$uid}.html";
+    $pdfFile = "/tmp/print_{$mode}_{$uid}.pdf";
+    file_put_contents($htmlFile, $html);
 
-<script>
-    JsBarcode("#barcode", "<?php echo addslashes($id); ?>", {
-        format: "CODE128", displayValue: false, height: 65, margin: 0
-    });
-</script>
+    $cmdPdf = "wkhtmltopdf --enable-javascript --javascript-delay 300 --dpi $dpi --page-width $w --page-height $h --margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 " . escapeshellarg($htmlFile) . " " . escapeshellarg($pdfFile) . " 2>&1";
+    exec($cmdPdf);
 
-</body>
-</html>
-<?php
-$html = ob_get_clean();
+    $cmdPrint = "lp -d " . escapeshellarg($targetPrinter) . " $lpOptions " . escapeshellarg($pdfFile) . " 2>&1";
+    exec($cmdPrint, $out, $ret);
 
-// --- 5. PRODUCCIÓN PDF ---
-$uid = uniqid();
-$htmlFile = "/tmp/diag_$uid.html";
-$pdfFile = "/tmp/diag_$uid.pdf";
-file_put_contents($htmlFile, $html);
-
-$cmdPdf = "wkhtmltopdf --enable-javascript --javascript-delay 300 "
-        . "--viewport-size 1280x800 --disable-smart-shrinking --dpi 203 "
-        . "--page-width $w --page-height $h "
-        . "--margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 "
-        . escapeshellarg($htmlFile) . " "
-        . escapeshellarg($pdfFile) . " 2>&1";
-
-exec($cmdPdf, $outPdf, $retPdf);
-
-if ($retPdf !== 0) {
-    echo json_encode(['status' => 'error', 'message' => 'Fallo al generar el PDF de diagnóstico', 'debug' => $outPdf]);
-    exit;
+    @unlink($htmlFile); @unlink($pdfFile);
+    return ['status' => $ret === 0, 'printer' => $targetPrinter, 'mode' => $mode];
 }
 
-// --- 6. ENVÍO A COLA CON DIAGNÓSTICO ---
-$dest = ($printer === 'gk420d') ? 'GK420d' : 'QL-570';
-// v2.20: Usamos un comando base seguro para diagnosticar el bloqueo si persiste.
-$options = ($printer === 'gk420d') ? "-o scaling=100 -o orientation-requested=4 -o PageSize=Custom.100x150mm" : "";
+// --- 6. LANZAMIENTO DEL FLUJO ---
+$results = [];
 
-$cmdPrint = "lp -d " . escapeshellarg($dest) . " $options " . escapeshellarg($pdfFile) . " 2>&1";
-
-exec($cmdPrint, $outT, $retT);
-
-@unlink($htmlFile); @unlink($pdfFile);
-
-if ($retT === 0) {
-    echo json_encode(['status' => 'success', 'id' => $id, 'printer' => $dest, 'debug' => 'v2.20 Diagnostic OK']);
+if ($manualPrinter) {
+    // Escenario A: Re-impresión individual desde el Historial
+    $results[] = processLabel($id, $record, $manualMode, $manualPrinter, $manualCopies);
 } else {
-    // Si falla, devolvemos el error exacto de CUPS/Linux al front-end
-    echo json_encode([
-        'status' => 'error', 
-        'message' => 'La impresora ha rechazado el trabajo. Revisa CUPS.',
-        'linux_error' => implode("\n", $outT),
-        'debug' => 'v2.20 FAIL'
-    ]);
+    // Escenario B: Flujo Automático para Nuevas Altas
+    if ($type === 'repair') {
+        // Reparación: Un ticket pequeño en Brother y el Informe Grande en Zebra
+        $results[] = processLabel($id, $record, 'ref', $PRINTER_BROTHER, 1);
+        $results[] = processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
+    } else {
+        // Creación: 2 Referencias en Zebra y 1 Informe con S/N también en Zebra
+        $results[] = processLabel($id, $record, 'ref', $PRINTER_ZEBRA, 2);
+        $results[] = processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
+    }
 }
+
+echo json_encode(['status' => 'success', 'results' => $results, 'v' => '2.22']);

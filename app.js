@@ -133,7 +133,7 @@ forms.repair.addEventListener('submit', (e) => {
             if (res.status === 'success') {
                 STATE.nextRepairId++;
                 localStorage.setItem('nextRepairId', STATE.nextRepairId);
-                printLabels(data.id, 1);
+                printLabel(data.id); // Flujo automático v2.22
                 showToast('Reparación registrada con éxito');
                 forms.repair.reset();
                 showView('home');
@@ -184,8 +184,8 @@ forms.create.addEventListener('submit', (e) => {
             if (res.status === 'success') {
                 STATE.nextCreateId++;
                 localStorage.setItem('nextCreateId', STATE.nextCreateId);
-                printLabels(data.id, 2);
-                showToast('Equipo creado con éxito');
+                printLabel(data.id); // Flujo automático v2.22
+                showToast('Creación registrada con éxito');
                 forms.create.reset();
                 resetCreationForm();
                 showView('home');
@@ -417,10 +417,11 @@ document.addEventListener('click', (e) => {
         deleteRecord(id, type);
     } else if (e.target.classList.contains('btn-print-ref')) {
         const id = e.target.getAttribute('data-id');
-        printLabel(id, 'ql570');
+        const printer = id.startsWith('R-') ? 'ql-570' : 'gk420d';
+        printLabel(id, printer, 1, 'ref');
     } else if (e.target.classList.contains('btn-print')) {
         const id = e.target.getAttribute('data-id');
-        printLabel(id, 'gk420d');
+        printLabel(id, 'gk420d', 1, 'full');
     }
 });
 
@@ -600,17 +601,22 @@ function printLabels(id, copies = 1, printer = 'gk420d') {
     printLabel(id, printer, copies);
 }
 
-function printLabel(id, printer = 'gk420d', copies = 1) {
-    const target = String(printer || 'gk420d').toLowerCase();
-    const copyCount = Number(copies) || 1;
-    fetch(`print.php?id=${encodeURIComponent(id)}&printer=${encodeURIComponent(target)}&copies=${copyCount}`)
+function printLabel(id, printer = null, copies = 1, mode = 'full') {
+    let url = `print.php?id=${encodeURIComponent(id)}`;
+    if (printer) url += `&printer=${encodeURIComponent(printer)}`;
+    if (copies > 1) url += `&copies=${encodeURIComponent(copies)}`;
+    if (mode !== 'full') url += `&mode=${encodeURIComponent(mode)}`;
+
+    const targetLabel = printer ? `(${printer})` : '(Auto)';
+    
+    fetch(url)
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                showToast(`Impresión enviada (${target}): ${id}`);
+                showToast(`Impresión enviada ${targetLabel}: ${id}`);
             } else {
                 console.error('Print error:', data);
-                showToast(`Error al imprimir (${target})`);
+                showToast(`Error al imprimir ${targetLabel}`);
             }
         })
         .catch(err => {
