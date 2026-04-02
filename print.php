@@ -1,7 +1,7 @@
 <?php
 /**
- * MODUL4 - Linux Print Proxy for CUPS (v2.3 Premium)
- * Diseño Horizontal optimizado para Zebra GK420d 150x100mm
+ * MODUL4 - Linux Print Proxy for CUPS (v2.5 Rotación)
+ * Diseño Horizontal rotado 90° para rollos de 100x150mm
  */
 
 header('Content-Type: application/json');
@@ -41,11 +41,11 @@ try {
 
     if ($type === 'repair') {
         $stmt = $pdo->prepare("SELECT * FROM repairs WHERE id = ?");
-        $stmt->execute([$id]);
+        $stmt->execute([id]);
         $record = $stmt->fetch();
     } else {
         $stmt = $pdo->prepare("SELECT * FROM creations WHERE id = ?");
-        $stmt->execute([$id]);
+        $stmt->execute([id]);
         $record = $stmt->fetch();
         if ($record) {
             $stmtC = $pdo->prepare("SELECT component_label, component_value FROM creation_components WHERE creation_id = ?");
@@ -55,24 +55,24 @@ try {
     }
 
     if (!$record) {
-        throw new Exception("ID no encontrado en DB.");
+        throw new Exception("ID no encontrado.");
     }
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
     exit;
 }
 
-// --- 3. PROCESAR LOGO (Base64) ---
+// --- 3. PROCESAR LOGO ---
 $logoPath = __DIR__ . '/images/logo_modul4-6.png';
 $logoBase64 = "";
 if (file_exists($logoPath)) {
     $logoBase64 = base64_encode(file_get_contents($logoPath));
 }
 
-// --- 4. CONFIGURACIÓN PÁGINA ---
+// --- 4. CONFIGURACIÓN PÁGINA (Físico real 100x150) ---
 $isZebra = ($printer === 'gk420d');
-$w = $isZebra ? '150mm' : '62mm'; // Invertimos para horizontal
-$h = $isZebra ? '100mm' : '29mm';
+$w = $isZebra ? '100mm' : '62mm';
+$h = $isZebra ? '150mm' : '29mm';
 
 ob_start();
 ?>
@@ -81,43 +81,51 @@ ob_start();
 <meta charset='UTF-8'>
 <script src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'></script>
 <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; color: #1a1a1a; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; color: #111; background: #fff; }
     
-    /* Layout Premium Horizontal GK420d (150x100) */
+    /* ZEBRA ROTATION LOGIC (v2.5) */
     <?php if($isZebra): ?>
-    .ticket { width: 150mm; height: 100mm; padding: 6mm; box-sizing: border-box; display: flex; flex-direction: column; }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 5px; margin-bottom: 15px; }
-    .header .title { text-align: right; }
-    .header .title h1 { margin: 0; font-size: 18px; color: #c00; }
-    .header .title p { margin: 0; font-size: 11px; font-weight: bold; opacity: 0.7; }
-    .logo-img { height: 35px; }
-
-    .main-grid { display: flex; gap: 20px; align-items: start; }
-    .col-barcode { flex: 0 0 250px; text-align: center; }
-    .col-data { flex: 1; font-size: 13px; }
+    .page { width: 100mm; height: 150mm; overflow: hidden; position: relative; }
     
+    .ticket-rotated { 
+        width: 150mm; 
+        height: 100mm; 
+        padding: 5mm; 
+        box-sizing: border-box;
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform: rotate(90deg) translate(0, -100mm);
+        transform-origin: top left;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 12px; }
+    .header h1 { margin: 0; font-size: 18px; color: #cc0000; letter-spacing: 1px; }
+    .logo-img { height: 32px; }
+
+    .main { display: flex; gap: 15px; }
+    .barcode-area { flex: 0 0 200px; text-align: center; }
     #barcode { width: 100%; height: 60px; }
-    .ref-text { font-size: 32px; font-weight: 900; margin-top: 5px; letter-spacing: -1px; }
+    .ref-text { font-size: 28px; font-weight: 900; margin-top: 5px; }
 
+    .data-area { flex: 1; font-size: 13px; }
     .data-table { width: 100%; border-collapse: collapse; }
-    .data-table td { padding: 4px 0; border-bottom: 1px dotted #ccc; }
-    .label { font-weight: bold; color: #555; width: 80px; }
+    .data-table td { padding: 4px 0; border-bottom: 1px dotted #888; }
+    .lbl { font-weight: bold; width: 70px; color: #555; }
     
-    .details-section { margin-top: 15px; flex-grow: 1; border: 1px solid #111; border-radius: 4px; padding: 8px; position: relative; }
-    .details-label { position: absolute; top: -8px; left: 10px; background: #fff; padding: 0 5px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-    .details-content { font-size: 12px; line-height: 1.4; }
+    .details { margin-top: 12px; border: 1.5px solid #000; padding: 8px; flex-grow: 1; position: relative; }
+    .details-tag { position: absolute; top: -8px; left: 10px; background: #fff; padding: 0 5px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+    .details-text { font-size: 12px; line-height: 1.4; color: #000; }
 
-    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; }
-    .footer .printed { font-size: 9px; font-style: italic; color: #777; }
-    .signature { width: 180px; text-align: center; border-top: 1px solid #000; padding-top: 5px; font-size: 11px; font-weight: bold; }
-    
-    ul { margin: 5px 0; padding-left: 15px; list-style-type: square; }
-    li { margin-bottom: 2px; }
+    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; font-size: 9px; }
+    .signature { width: 160px; text-align: center; border-top: 1px solid #000; padding-top: 5px; font-weight: bold; font-size: 11px; }
 
-    /* Brother Layout (Sin cambios grandes) */
+    /* BROTHER LAYOUT */
     <?php else: ?>
-    .page-brother { width: 62mm; height: 29mm; padding: 3px; box-sizing: border-box; text-align: center; }
-    .ref-small { font-weight: bold; font-size: 22px; }
+    .ticket-brother { width: 62mm; height: 29mm; padding: 3px; box-sizing: border-box; text-align: center; }
+    .ref-small { font-weight: 900; font-size: 22px; }
     #barcode { width: 90%; height: 40px; margin: 0 auto; }
     <?php endif; ?>
 </style>
@@ -125,58 +133,59 @@ ob_start();
 <body>
 
 <?php if($isZebra): ?>
-    <div class="ticket">
-        <div class="header">
-            <div class="logo-area">
-                <?php if($logoBase64): ?>
-                    <img src="data:image/png;base64,<?php echo $logoBase64; ?>" class="logo-img">
-                <?php else: ?>
-                    <div style="font-size:24px; font-weight:900;">MODUL 4</div>
-                <?php endif; ?>
+    <div class="page">
+        <div class="ticket-rotated">
+            <div class="header">
+                <div>
+                    <?php if($logoBase64): ?>
+                        <img src="data:image/png;base64,<?php echo $logoBase64; ?>" class="logo-img">
+                    <?php else: ?>
+                        <div style="font-size:20px; font-weight:900;">MODUL 4</div>
+                    <?php endif; ?>
+                </div>
+                <div style="text-align:right">
+                    <h1>PARTE DE TALLER</h1>
+                    <div style="font-size:9px; font-weight:bold; opacity:0.8;">SISTEMA DE CONTROL DE CALIDAD</div>
+                </div>
             </div>
-            <div class="title">
-                <h1>PARTE DE ENTRADA</h1>
-                <p>CONTROL DE TALLER & SERVICIO TÉCNICO</p>
-            </div>
-        </div>
 
-        <div class="main-grid">
-            <div class="col-barcode">
-                <svg id="barcode"></svg>
-                <div class="ref-text"><?php echo htmlspecialchars($id); ?></div>
+            <div class="main">
+                <div class="barcode-area">
+                    <svg id="barcode"></svg>
+                    <div class="ref-text"><?php echo htmlspecialchars($id); ?></div>
+                </div>
+                <div class="data-area">
+                    <table class="data-table">
+                        <tr><td class="lbl">CLIENTE:</td><td><?php echo htmlspecialchars($record['client']); ?></td></tr>
+                        <tr><td class="lbl">TÉCNICO:</td><td><?php echo htmlspecialchars($record['technician']); ?></td></tr>
+                        <tr><td class="lbl">FECHA:</td><td><?php echo date("d/m/Y H:i", strtotime($record['date'])); ?></td></tr>
+                    </table>
+                </div>
             </div>
-            <div class="col-data">
-                <table class="data-table">
-                    <tr><td class="label">CLIENTE:</td><td><?php echo htmlspecialchars($record['client']); ?></td></tr>
-                    <tr><td class="label">TÉCNICO:</td><td><?php echo htmlspecialchars($record['technician']); ?></td></tr>
-                    <tr><td class="label">FECHA:</td><td><?php echo date("d/m/Y H:i", strtotime($record['date'])); ?></td></tr>
-                </table>
-            </div>
-        </div>
 
-        <div class="details-section">
-            <div class="details-label"><?php echo ($type === 'repair') ? 'Descripción del Problema' : 'Configuración de Equipo'; ?></div>
-            <div class="details-content">
-                <?php if($type === 'repair'): ?>
-                    <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
-                <?php else: ?>
-                    <ul>
-                        <?php foreach($record['components'] as $comp): ?>
-                            <li><strong><?php echo htmlspecialchars($comp['component_label']); ?>:</strong> <?php echo htmlspecialchars($comp['component_value']); ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
+            <div class="details">
+                <div class="details-tag"><?php echo ($type === 'repair') ? 'Fallo Reportado' : 'Componentes Instalados'; ?></div>
+                <div class="details-text">
+                    <?php if($type === 'repair'): ?>
+                        <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
+                    <?php else: ?>
+                        <div style="column-count: 2;">
+                            <?php foreach($record['components'] as $comp): ?>
+                                <div style="margin-bottom:2px">• <strong><?php echo htmlspecialchars($comp['component_label']); ?>:</strong> <?php echo htmlspecialchars($comp['component_value']); ?></div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
-        </div>
 
-        <div class="footer">
-            <div class="printed">Emitido por TPV MODUL4 - <?php echo date("d/m/Y H:i:s"); ?></div>
-            <div class="signature">Firma Conformidad</div>
+            <div class="footer">
+                <div>Emitido: <?php echo date("d/m/Y H:i"); ?></div>
+                <div class="signature">CONFORMIDAD CLIENTE</div>
+            </div>
         </div>
     </div>
-
 <?php else: ?>
-    <div class="page-brother">
+    <div class="ticket-brother">
         <div class="ref-small">REF: <?php echo htmlspecialchars($id); ?></div>
         <svg id="barcode"></svg>
     </div>
@@ -198,13 +207,12 @@ $html = ob_get_clean();
 
 // --- 5. PRODUCCIÓN PDF ---
 $uid = uniqid();
-$htmlFile = "/tmp/h_print_$uid.html";
-$pdfFile = "/tmp/h_print_$uid.pdf";
+$htmlFile = "/tmp/protated_$uid.html";
+$pdfFile = "/tmp/protated_$uid.pdf";
 file_put_contents($htmlFile, $html);
 
-// Usamos orientación Landscape explícita para la Zebra
-$orientation = $isZebra ? "--orientation Landscape " : "";
-$cmdPdf = "wkhtmltopdf --enable-javascript --javascript-delay 300 $orientation"
+// NO USAR --orientation Landscape, ya rotamos nosotros por CSS
+$cmdPdf = "wkhtmltopdf --enable-javascript --javascript-delay 300 "
         . "--page-width $w --page-height $h "
         . "--margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 "
         . escapeshellarg($htmlFile) . " "
@@ -222,18 +230,16 @@ if ($retPdf !== 0) {
 $dest = ($printer === 'gk420d') ? 'GK420d' : 'QL-570';
 $cmdPrint = "lp -d " . escapeshellarg($dest) . " " . escapeshellarg($pdfFile) . " 2>&1";
 
-$allSuccess = true;
-$debugOutput = [];
+$allSuccess = true; $debugOutput = [];
 for ($i = 0; $i < $copies; $i++) {
     exec($cmdPrint, $outT, $retT);
     if ($retT !== 0) { $allSuccess = false; $debugOutput = array_merge($debugOutput, $outT); }
 }
 
-@unlink($htmlFile);
-@unlink($pdfFile);
+@unlink($htmlFile); @unlink($pdfFile);
 
 if ($allSuccess) {
-    echo json_encode(['status' => 'success', 'id' => $id, 'printer' => $dest, 'copies' => $copies]);
+    echo json_encode(['status' => 'success', 'id' => $id, 'printer' => $dest]);
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Error LP', 'debug' => $debugOutput]);
 }
