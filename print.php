@@ -1,7 +1,7 @@
 <?php
 /**
- * MODUL 4 - SISTEMA DE IMPRESIÓN DUAL PROFESIONAL (v2.24)
- * Optimizada para Brother QL-570 (Ref) y Zebra GK420d (Full)
+ * MODUL 4 - SISTEMA DE IMPRESIÓN DUAL PROFESIONAL (v2.25 - Restoration)
+ * Restauración a parámetros estables tras reporte de usuario.
  */
 
 header('Content-Type: application/json');
@@ -13,7 +13,7 @@ $user = 'tecnicos';
 $pass = 'Nfa8uku4';
 $charset = 'utf8mb4';
 
-// Nombres de impresoras en CUPS
+// Impresoras Configuradas en CUPS
 $PRINTER_ZEBRA = 'GK420d';
 $PRINTER_BROTHER = 'QL-570';
 
@@ -24,7 +24,7 @@ $manualMode = $_GET['mode'] ?? 'full';
 $manualCopies = $_GET['copies'] ?? 1;
 
 if (!$id) {
-    echo json_encode(['status' => 'error', 'message' => 'ID no proporcionada']);
+    echo json_encode(['status' => 'error', 'message' => 'No se especificó la ID.']);
     exit;
 }
 
@@ -64,15 +64,17 @@ try {
 $logoPath = __DIR__ . '/images/m4bannerblack.png';
 $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : "";
 
-// --- 5. FUNCIÓN DE PROCESAMIENTO ---
+// --- 5. FUNCIÓN CORE: GENERAR Y ENVIAR ---
 function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
     global $logoBase64, $type;
     
-    // Configuración de dimensiones
+    // Configuración estable similar a v2.22
     if ($targetPrinter === 'GK420d') {
-        $w = '100mm'; $h = '150mm'; $pageSize = '100x150mm'; $dpi = 203;
+        $w = '150mm'; $h = '100mm'; $pageSize = 'Custom.100x150mm'; $dpi = 203;
+        $lpOptions = "-o scaling=100 -o orientation-requested=4 -n $copies -o PageSize=$pageSize";
     } else {
-        $w = '62mm'; $h = '29mm'; $pageSize = '62x29mm'; $dpi = 203;
+        $w = '62mm'; $h = '29mm'; $pageSize = 'Custom.62x29mm'; $dpi = 203;
+        $lpOptions = "-o scaling=100 -o orientation-requested=3 -n $copies -o PageSize=$pageSize";
     }
 
     ob_start();
@@ -86,26 +88,27 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             body { font-family: 'Arial Black', Gadget, sans-serif; color: #000; }
             .ticket { width: 100%; height: 100%; padding: 2mm; box-sizing: border-box; display: flex; flex-direction: column; }
             
-            /* MODO REFERENCIA (QL y GK) */
+            /* MODO REFERENCIA (Zebra y Brother) */
             .mode-ref { text-align: center; justify-content: center; align-items: center; }
-            .is-zebra.mode-ref .ref-id { font-size: 90px; font-weight: 900; }
-            .is-zebra.mode-ref .client-name { font-size: 38px; font-weight: 900; border-top: 5px solid #000; width: 90%; margin-top: 10px; }
-            
-            .is-brother.mode-ref .ref-id { font-size: 45px; font-weight: 1000; letter-spacing: -2px; margin-top: -5px; }
-            .is-brother.mode-ref .client-name { font-size: 20px; font-weight: 1000; border-top: 2px solid #000; width: 100%; }
+            .is-zebra.mode-ref .ref-id { font-size: 80px; font-weight: 1000; line-height: 1; }
+            .is-brother.mode-ref .ref-id { font-size: 38px; font-weight: 1000; line-height: 1; border-bottom: 2px solid #000; width: 100%; padding-bottom: 2px; }
+            .client-name { font-size: 20px; font-weight: 1000; margin-top: 5px; }
 
-            /* MODO INFORME COMPLETO (SOLO GK) */
+            /* MODO INFORME COMPLETO (Solo Zebra) */
             .header-banner { width: 100%; height: 18mm; text-align: center; }
-            .header-info { display: flex; justify-content: space-between; border-bottom: 5px solid #000; }
-            .title-full { font-size: 28px; font-weight: 900; }
-            .body-full { display: flex; gap: 5mm; margin-top: 5px; align-items: center; }
-            .id-full { font-size: 18px; font-weight: 900; border: 1px solid #ddd; padding: 2px; } /* ID reducido en Full */
+            .header-info { display: flex; justify-content: space-between; border-bottom: 5px solid #000; padding-bottom: 5px; }
+            .title-full { font-size: 26px; font-weight: 900; }
+            .body-full { display: flex; gap: 8mm; margin-top: 5px; align-items: center; }
+            .id-full { font-size: 44px; font-weight: 900; }
             .inf-box { margin-top: 5px; border: 4px solid #000; padding: 10px; flex-grow: 1; border-radius: 5px; position: relative; }
-            .inf-tag { position: absolute; top: -12px; left: 15px; background: #fff; padding: 0 5px; font-size: 14px; font-weight: 900; }
+            .inf-tag { position: absolute; top: -14px; left: 15px; background: #fff; padding: 0 10px; font-size: 14px; font-weight: 900; border: 2px solid #000; }
             
-            .comp-table { width: 100%; border-collapse: collapse; }
-            .comp-table td { border: 1px solid #000; padding: 4px; font-size: 15px; font-weight: bold; }
+            .comp-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+            .comp-table td { border: 1px solid #000; padding: 5px; font-size: 14px; font-weight: bold; }
             .comp-header { background: #eee; font-weight: 900; width: 35%; }
+
+            .footer-strip { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; }
+            .signature { width: 280px; text-align: center; border-top: 4px solid #000; font-weight: 900; font-size: 18px; padding-top: 4px; }
         </style>
     </head>
     <body class="mode-<?php echo $mode; ?> <?php echo ($targetPrinter === 'GK420d' ? 'is-zebra' : 'is-brother'); ?>">
@@ -119,23 +122,24 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                     <?php if($logoBase64): ?><img src="data:image/png;base64,<?php echo $logoBase64; ?>" style="height:100%; width:auto;"><?php endif; ?>
                 </div>
                 <div class="header-info">
-                    <div class="title-full"><?php echo ($type==='repair' ? 'ORDEN TALLER' : 'SISTEMA NUEVO'); ?></div>
-                    <div style="font-size:20px;"><?php echo date("d/m/Y"); ?></div>
+                    <div class="title-full"><?php echo ($type==='repair' ? 'ORDEN DE TRABAJO' : 'MONTAJE EQUIPO'); ?></div>
+                    <div style="font-size: 20px; font-weight: bold;"><?php echo date("d/m/Y"); ?></div>
                 </div>
                 <div class="body-full">
                     <div style="text-align:center;">
-                        <svg id="barcode" style="width:250px; height:60px;"></svg>
-                        <div style="font-size: 32px; font-weight: 1000;"><?php echo $id; ?></div>
+                        <svg id="barcode" style="width:260px; height:60px;"></svg>
+                        <div class="id-full"><?php echo $id; ?></div>
                     </div>
-                    <div style="font-size:22px; flex:1;">
+                    <div style="flex:1; font-size:20px;">
                         <b>CLIENTE:</b> <?php echo htmlspecialchars($record['client']); ?><br>
-                        <b>TÉCNICO:</b> <?php echo htmlspecialchars($record['technician']); ?>
+                        <b>TÉCNICO:</b> <?php echo htmlspecialchars($record['technician']); ?><br>
+                        <b>ESTADO:</b> RECIÉN ENTRADO
                     </div>
                 </div>
                 <div class="inf-box">
-                    <div class="inf-tag"><?php echo ($type==='repair' ? 'SINTOMAS' : 'COMPONENTES / SERIE'); ?></div>
+                    <div class="inf-tag"><?php echo ($type==='repair' ? 'REVISIÓN SOLICITADA' : 'COMPONENTES INSTALADOS'); ?></div>
                     <?php if($type === 'repair'): ?>
-                        <div style="font-size:20px; font-weight:bold;"><?php echo nl2br(htmlspecialchars($record['problem'])); ?></div>
+                        <div style="font-size:18px; font-weight:900;"><?php echo nl2br(htmlspecialchars($record['problem'])); ?></div>
                     <?php else: ?>
                         <table class="comp-table">
                             <?php foreach($record['components'] as $comp): ?>
@@ -147,14 +151,17 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                         </table>
                     <?php endif; ?>
                 </div>
-                <div style="text-align:right; font-size:10px; margin-top:5px;">v2.24 PRO</div>
+                <div class="footer-strip">
+                    <span style="font-size:11px; font-weight:bold;">v2.25 Restoration Stable</span>
+                    <div class="signature">FIRMA DE RECEPCIÓN</div>
+                </div>
             <?php endif; ?>
         </div>
         <script>
             JsBarcode("#barcode", "<?php echo addslashes($id); ?>", {
                 format: "CODE128", 
                 displayValue: false, 
-                height: <?php echo ($mode === 'ref' ? ($targetPrinter === 'GK420d' ? 120 : 50) : 60); ?>,
+                height: <?php echo ($mode === 'ref' ? ($targetPrinter === 'GK420d' ? 120 : 45) : 60); ?>,
                 width: <?php echo ($targetPrinter === 'GK420d' ? 3 : 2); ?>,
                 margin: 0
             });
@@ -168,9 +175,8 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
     $htmlFile = "/tmp/p_{$id}_{$mode}_{$uid}.html";
     file_put_contents($htmlFile, $html);
     
-    exec("wkhtmltopdf --dpi $dpi --page-width $w --page-height $h --margin-top 0 --margin-bottom 0 --margin-left 2 --margin-right 2 " . escapeshellarg($htmlFile) . " " . escapeshellarg($pdfFile));
+    exec("wkhtmltopdf --dpi $dpi --page-width $w --page-height $h --margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 " . escapeshellarg($htmlFile) . " " . escapeshellarg($pdfFile));
     
-    $lpOptions = "-o scaling=100 -o orientation-requested=3 -n $copies -o PageSize=$pageSize";
     exec("lp -d " . escapeshellarg($targetPrinter) . " $lpOptions " . escapeshellarg($pdfFile));
     
     @unlink($htmlFile); @unlink($pdfFile);
@@ -189,4 +195,4 @@ if ($manualPrinter) {
     }
 }
 
-echo json_encode(['status' => 'success', 'v' => '2.24']);
+echo json_encode(['status' => 'success', 'v' => '2.25']);
