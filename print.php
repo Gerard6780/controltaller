@@ -68,7 +68,7 @@ $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath
 function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
     global $logoBase64, $type;
     
-    if ($targetPrinter === 'GK420d') {
+    if (strtoupper($targetPrinter) === 'GK420D') {
         $w = '150mm'; $h = '100mm'; $pageSize = 'Custom.100x150mm'; $dpi = 203;
         $lpOptions = "-o scaling=100 -o orientation-requested=4 -n $copies -o PageSize=$pageSize";
     } else {
