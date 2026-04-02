@@ -88,11 +88,14 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             body { font-family: 'Arial Black', Gadget, sans-serif; color: #000; }
             .ticket { width: 100%; height: 100%; padding: 2mm; box-sizing: border-box; display: flex; flex-direction: column; }
             
-            /* MODO REFERENCIA (Zebra y Brother) */
-            .mode-ref { text-align: center; justify-content: center; align-items: center; }
-            .is-zebra.mode-ref .ref-id { font-size: 80px; font-weight: 1000; line-height: 1; }
-            .is-brother.mode-ref .ref-id { font-size: 38px; font-weight: 1000; line-height: 1; border-bottom: 2px solid #000; width: 100%; padding-bottom: 2px; }
-            .client-name { font-size: 20px; font-weight: 1000; margin-top: 5px; }
+            /* MODO REFERENCIA Mejorado (QL y GK) */
+            .mode-ref .ticket { justify-content: center; align-items: center; text-align: center; }
+            .is-zebra.mode-ref .ref-id { font-size: 85px; font-weight: 900; line-height: 1; margin-bottom: 10px; }
+            .is-zebra.mode-ref .client-name { font-size: 34px; font-weight: 800; border-top: 4px solid #000; width: 85%; margin-top: 15px; }
+
+            .is-brother.mode-ref .ref-id { font-size: 40px; font-weight: 950; letter-spacing: -1.5px; margin-bottom: -4px; width: 100%; border-bottom: 2px solid #000; }
+            .is-brother.mode-ref .client-name { font-size: 15px; font-weight: 800; margin-top: 2px; }
+            .is-brother.mode-ref .barcode-svg { margin: 2px 0; }
 
             /* MODO INFORME COMPLETO (Solo Zebra) */
             .header-banner { width: 100%; height: 18mm; text-align: center; }
@@ -130,16 +133,15 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                         <svg id="barcode" style="width:260px; height:60px;"></svg>
                         <div class="id-full"><?php echo $id; ?></div>
                     </div>
-                    <div style="flex:1; font-size:20px;">
+                    <div style="flex:1; font-size:22px;">
                         <b>CLIENTE:</b> <?php echo htmlspecialchars($record['client']); ?><br>
-                        <b>TÉCNICO:</b> <?php echo htmlspecialchars($record['technician']); ?><br>
-                        <b>ESTADO:</b> RECIÉN ENTRADO
+                        <b>TÉCNICO:</b> <?php echo htmlspecialchars($record['technician']); ?>
                     </div>
                 </div>
                 <div class="inf-box">
-                    <div class="inf-tag"><?php echo ($type==='repair' ? 'REVISIÓN SOLICITADA' : 'COMPONENTES INSTALADOS'); ?></div>
+                    <div class="inf-tag"><?php echo ($type==='repair' ? 'AVERÍA DECLARADA' : 'COMPONENTES Y/O S/N'); ?></div>
                     <?php if($type === 'repair'): ?>
-                        <div style="font-size:18px; font-weight:900;"><?php echo nl2br(htmlspecialchars($record['problem'])); ?></div>
+                        <div style="font-size:20px; font-weight:900; line-height: 1.2;"><?php echo nl2br(htmlspecialchars($record['problem'])); ?></div>
                     <?php else: ?>
                         <table class="comp-table">
                             <?php foreach($record['components'] as $comp): ?>
@@ -152,10 +154,10 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                     <?php endif; ?>
                 </div>
                 <div class="footer-strip">
-                    <span style="font-size:11px; font-weight:bold;">v2.25 Restoration Stable</span>
+                    <span style="font-size:10px; font-weight:bold;">v2.26 PRO</span>
                     <div class="signature">FIRMA DE RECEPCIÓN</div>
                 </div>
-            <?php endif; ?>
+<?php endif; ?>
         </div>
         <script>
             JsBarcode("#barcode", "<?php echo addslashes($id); ?>", {
