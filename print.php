@@ -1,7 +1,7 @@
 <?php
 /**
- * MODUL 4 - SISTEMA DE IMPRESIÓN DUAL PROFESIONAL (v2.25 - Restoration)
- * Restauración a parámetros estables tras reporte de usuario.
+ * MODUL 4 - SISTEMA DE IMPRESIÓN DUAL PROFESIONAL (v2.32)
+ * Unificación total de flujos automáticos y manuales.
  */
 
 header('Content-Type: application/json');
@@ -19,7 +19,6 @@ $PRINTER_BROTHER = 'QL-570';
 
 // --- 2. CAPTURA DE PARÁMETROS ---
 $id = trim($_GET['id'] ?? '');
-// Normalizar nombre de impresora a MAYÚSCULAS
 $manualPrinter = isset($_GET['printer']) ? strtoupper($_GET['printer']) : null; 
 $manualMode = $_GET['mode'] ?? 'full';     
 $manualCopies = $_GET['copies'] ?? 1;
@@ -37,7 +36,6 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
 
-    // Detección robusta de tipo
     $type = (strpos($id, 'R-') === 0) ? 'repair' : 'creation';
     $record = null;
 
@@ -70,7 +68,6 @@ $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath
 function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
     global $logoBase64, $type;
     
-    // Configuración estable similar a v2.22
     if ($targetPrinter === 'GK420d') {
         $w = '150mm'; $h = '100mm'; $pageSize = 'Custom.100x150mm'; $dpi = 203;
         $lpOptions = "-o scaling=100 -o orientation-requested=4 -n $copies -o PageSize=$pageSize";
@@ -90,7 +87,6 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             body { font-family: 'Arial Black', Gadget, sans-serif; color: #000; }
             .ticket { width: 100%; height: 100%; padding: 2mm; box-sizing: border-box; display: flex; flex-direction: column; }
             
-            /* MODO REFERENCIA Mejorado (QL y GK) */
             .mode-ref .ticket { justify-content: center; align-items: center; text-align: center; }
             .is-zebra.mode-ref .ref-id { font-size: 85px; font-weight: 900; line-height: 1; margin-bottom: 10px; }
             .is-zebra.mode-ref .client-name { font-size: 34px; font-weight: 800; border-top: 4px solid #000; width: 85%; margin-top: 15px; }
@@ -99,7 +95,6 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             .is-brother.mode-ref .client-name { font-size: 15px; font-weight: 800; margin-top: 2px; }
             .is-brother.mode-ref .barcode-svg { margin: 2px 0; }
 
-            /* MODO INFORME COMPLETO (Solo Zebra) */
             .header-banner { width: 100%; height: 18mm; text-align: center; }
             .header-info { display: flex; justify-content: space-between; border-bottom: 5px solid #000; padding-bottom: 5px; }
             .title-full { font-size: 26px; font-weight: 900; }
@@ -113,7 +108,6 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
             .comp-header { background: #eee; font-weight: 900; width: 35%; }
 
             .footer-strip { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
-            .signature { width: 280px; text-align: center; border-top: 4px solid #000; font-weight: 900; font-size: 18px; padding-top: 4px; }
         </style>
     </head>
     <body class="mode-<?php echo $mode; ?> <?php echo ($targetPrinter === 'GK420d' ? 'is-zebra' : 'is-brother'); ?>">
@@ -156,9 +150,9 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                     <?php endif; ?>
                 </div>
                 <div class="footer-strip">
-                    <span style="font-size:10px; font-weight:bold;">v2.31 Final PRO</span>
+                    <span style="font-size:10px; font-weight:bold;">v2.32 Final PRO</span>
                 </div>
-<?php endif; ?>
+            <?php endif; ?>
         </div>
         <script>
             JsBarcode("#barcode", "<?php echo addslashes($id); ?>", {
@@ -193,9 +187,9 @@ if ($manualPrinter) {
         processLabel($id, $record, 'ref', $PRINTER_BROTHER, 1);
         processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
     } else {
-        processLabel($id, $record, 'ref', $PRINTER_BROTHER, 1);
+        processLabel($id, $record, 'ref', $PRINTER_BROTHER, 2);
         processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
     }
 }
 
-echo json_encode(['status' => 'success', 'v' => '2.30', 'printer_used' => ($manualPrinter ?? 'AUTO')]);
+echo json_encode(['status' => 'success', 'v' => '2.32', 'printer_used' => ($manualPrinter ?? 'AUTO')]);

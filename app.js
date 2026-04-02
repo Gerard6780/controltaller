@@ -420,7 +420,7 @@ document.addEventListener('click', (e) => {
         printLabel(id, 'QL-570', 1, 'ref'); // Brother QL (Upper)
     } else if (e.target.classList.contains('btn-print')) {
         const id = e.target.getAttribute('data-id');
-        printLabel(id, 'GK420d', 1, 'full'); // Zebra GK (Upper)
+        printLabel(id); // Dispara el flujo automático de creación v2.32
     }
 });
 
