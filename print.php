@@ -1,7 +1,8 @@
 <?php
 /**
- * MODUL4 - Linux Print Proxy for CUPS (v2.5 Rotación)
+ * MODUL4 - Linux Print Proxy for CUPS (v2.6 Fixed Rotation)
  * Diseño Horizontal rotado 90° para rollos de 100x150mm
+ * Corregido problema de clipping (recorte) al rotar.
  */
 
 header('Content-Type: application/json');
@@ -41,11 +42,11 @@ try {
 
     if ($type === 'repair') {
         $stmt = $pdo->prepare("SELECT * FROM repairs WHERE id = ?");
-        $stmt->execute([id]);
+        $stmt->execute([$id]);
         $record = $stmt->fetch();
     } else {
         $stmt = $pdo->prepare("SELECT * FROM creations WHERE id = ?");
-        $stmt->execute([id]);
+        $stmt->execute([$id]);
         $record = $stmt->fetch();
         if ($record) {
             $stmtC = $pdo->prepare("SELECT component_label, component_value FROM creation_components WHERE creation_id = ?");
@@ -83,19 +84,25 @@ ob_start();
 <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; color: #111; background: #fff; }
     
-    /* ZEBRA ROTATION LOGIC (v2.5) */
+    /* ZEBRA ROTATION LOGIC (v2.6 Fixed) */
     <?php if($isZebra): ?>
-    .page { width: 100mm; height: 150mm; overflow: hidden; position: relative; }
+    .page { 
+        width: 100mm; 
+        height: 150mm; 
+        overflow: hidden; 
+        position: relative; 
+    }
     
     .ticket-rotated { 
         width: 150mm; 
         height: 100mm; 
-        padding: 5mm; 
+        padding: 6mm; 
         box-sizing: border-box;
         position: absolute;
         top: 0;
         left: 0;
-        transform: rotate(90deg) translate(0, -100mm);
+        /* Girar 90 grados y desplazar para que encaje en el lienzo de 100x150 */
+        transform: rotate(90deg) translateY(-100mm);
         transform-origin: top left;
         display: flex;
         flex-direction: column;
@@ -125,7 +132,6 @@ ob_start();
     /* BROTHER LAYOUT */
     <?php else: ?>
     .ticket-brother { width: 62mm; height: 29mm; padding: 3px; box-sizing: border-box; text-align: center; }
-    .ref-small { font-weight: 900; font-size: 22px; }
     #barcode { width: 90%; height: 40px; margin: 0 auto; }
     <?php endif; ?>
 </style>
@@ -136,17 +142,8 @@ ob_start();
     <div class="page">
         <div class="ticket-rotated">
             <div class="header">
-                <div>
-                    <?php if($logoBase64): ?>
-                        <img src="data:image/png;base64,<?php echo $logoBase64; ?>" class="logo-img">
-                    <?php else: ?>
-                        <div style="font-size:20px; font-weight:900;">MODUL 4</div>
-                    <?php endif; ?>
-                </div>
-                <div style="text-align:right">
-                    <h1>PARTE DE TALLER</h1>
-                    <div style="font-size:9px; font-weight:bold; opacity:0.8;">SISTEMA DE CONTROL DE CALIDAD</div>
-                </div>
+                <div><?php if($logoBase64): ?><img src="data:image/png;base64,<?php echo $logoBase64; ?>" class="logo-img"><?php endif; ?></div>
+                <div style="text-align:right"><h1>PARTE DE TALLER</h1></div>
             </div>
 
             <div class="main">
@@ -164,14 +161,14 @@ ob_start();
             </div>
 
             <div class="details">
-                <div class="details-tag"><?php echo ($type === 'repair') ? 'Fallo Reportado' : 'Componentes Instalados'; ?></div>
+                <div class="details-tag"><?php echo ($type === 'repair') ? 'Fallo Reportado' : 'Componentes'; ?></div>
                 <div class="details-text">
                     <?php if($type === 'repair'): ?>
                         <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
                     <?php else: ?>
                         <div style="column-count: 2;">
                             <?php foreach($record['components'] as $comp): ?>
-                                <div style="margin-bottom:2px">• <strong><?php echo htmlspecialchars($comp['component_label']); ?>:</strong> <?php echo htmlspecialchars($comp['component_value']); ?></div>
+                                <div>• <strong><?php echo htmlspecialchars($comp['component_label']); ?>:</strong> <?php echo htmlspecialchars($comp['component_value']); ?></div>
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
@@ -179,24 +176,22 @@ ob_start();
             </div>
 
             <div class="footer">
-                <div>Emitido: <?php echo date("d/m/Y H:i"); ?></div>
-                <div class="signature">CONFORMIDAD CLIENTE</div>
+                <div>Impreso: <?php echo date("d/m/Y H:i"); ?></div>
+                <div class="signature">FIRMA CONFORMIDAD</div>
             </div>
         </div>
     </div>
 <?php else: ?>
     <div class="ticket-brother">
-        <div class="ref-small">REF: <?php echo htmlspecialchars($id); ?></div>
+        <div style="font-size: 8px;"><?php echo date("d/m/Y H:i"); ?></div>
+        <div style="font-weight:900; font-size:22px;">REF: <?php echo htmlspecialchars($id); ?></div>
         <svg id="barcode"></svg>
     </div>
 <?php endif; ?>
 
 <script>
     JsBarcode("#barcode", "<?php echo addslashes($id); ?>", {
-        format: "CODE128",
-        displayValue: false,
-        height: <?php echo $isZebra ? '60' : '40'; ?>,
-        margin: 0
+        format: "CODE128", displayValue: false, height: 50, margin: 0
     });
 </script>
 
@@ -207,11 +202,11 @@ $html = ob_get_clean();
 
 // --- 5. PRODUCCIÓN PDF ---
 $uid = uniqid();
-$htmlFile = "/tmp/protated_$uid.html";
-$pdfFile = "/tmp/protated_$uid.pdf";
+$htmlFile = "/tmp/frot_$uid.html";
+$pdfFile = "/tmp/frot_$uid.pdf";
 file_put_contents($htmlFile, $html);
 
-// NO USAR --orientation Landscape, ya rotamos nosotros por CSS
+// Sin flags de orientación, rotamos por CSS
 $cmdPdf = "wkhtmltopdf --enable-javascript --javascript-delay 300 "
         . "--page-width $w --page-height $h "
         . "--margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 "
@@ -222,7 +217,6 @@ exec($cmdPdf, $outPdf, $retPdf);
 
 if ($retPdf !== 0) {
     echo json_encode(['status' => 'error', 'message' => 'Error PDF', 'debug' => $outPdf]);
-    @unlink($htmlFile);
     exit;
 }
 
@@ -230,7 +224,8 @@ if ($retPdf !== 0) {
 $dest = ($printer === 'gk420d') ? 'GK420d' : 'QL-570';
 $cmdPrint = "lp -d " . escapeshellarg($dest) . " " . escapeshellarg($pdfFile) . " 2>&1";
 
-$allSuccess = true; $debugOutput = [];
+$allSuccess = true;
+$debugOutput = [];
 for ($i = 0; $i < $copies; $i++) {
     exec($cmdPrint, $outT, $retT);
     if ($retT !== 0) { $allSuccess = false; $debugOutput = array_merge($debugOutput, $outT); }
