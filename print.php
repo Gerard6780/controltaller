@@ -18,7 +18,7 @@ $PRINTER_ZEBRA = 'GK420d';
 $PRINTER_BROTHER = 'QL-570';
 
 // --- 2. CAPTURA DE PARÁMETROS ---
-$id = $_GET['id'] ?? null;
+$id = trim($_GET['id'] ?? '');
 $manualPrinter = $_GET['printer'] ?? null; 
 $manualMode = $_GET['mode'] ?? 'full';     
 $manualCopies = $_GET['copies'] ?? 1;
@@ -36,6 +36,7 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
 
+    // Detección robusta de tipo
     $type = (strpos($id, 'R-') === 0) ? 'repair' : 'creation';
     $record = null;
 
@@ -196,4 +197,4 @@ if ($manualPrinter) {
     }
 }
 
-echo json_encode(['status' => 'success', 'v' => '2.25']);
+echo json_encode(['status' => 'success', 'v' => '2.29', 'type' => $type]);
