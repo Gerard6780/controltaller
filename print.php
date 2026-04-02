@@ -97,14 +97,14 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
 
             .header-banner { width: 100%; height: 18mm; text-align: center; }
             .header-info { display: flex; justify-content: space-between; border-bottom: 5px solid #000; padding-bottom: 5px; }
-            .title-full { font-size: 26px; font-weight: 900; }
-            .body-full { display: flex; gap: 4mm; margin-top: 5px; align-items: center; }
-            .id-full { font-size: 40px; font-weight: 900; }
-            .inf-box { margin-top: 5px; border: 4px solid #000; padding: 10px; flex-grow: 1; border-radius: 5px; position: relative; }
-            .inf-tag { position: absolute; top: -14px; left: 15px; background: #fff; padding: 0 10px; font-size: 14px; font-weight: 900; border: 2px solid #000; }
+            .title-full { font-size: 30px; font-weight: 900; }
+            .body-full { display: flex; gap: 10mm; margin-top: 5px; align-items: center; }
+            .id-full { font-size: 50px; font-weight: 950; }
+            .inf-box { margin-top: 8px; border: 4px solid #000; padding: 12px; flex-grow: 1; border-radius: 5px; position: relative; }
+            .inf-tag { position: absolute; top: -14px; left: 15px; background: #fff; padding: 0 10px; font-size: 16px; font-weight: 900; border: 2px solid #000; }
             
             .comp-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-            .comp-table td { border: 1px solid #000; padding: 5px; font-size: 14px; font-weight: bold; }
+            .comp-table td { border: 1px solid #000; padding: 5px; font-size: 15px; font-weight: bold; }
             .comp-header { background: #eee; font-weight: 900; width: 35%; }
 
             .footer-strip { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
@@ -122,14 +122,14 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                 </div>
                 <div class="header-info">
                     <div class="title-full"><?php echo ($type==='repair' ? 'ORDEN DE TRABAJO' : 'MONTAJE EQUIPO'); ?></div>
-                    <div style="font-size: 18px; font-weight: bold;"><?php echo date("d/m/Y"); ?></div>
+                    <div style="font-size: 22px; font-weight: bold;"><?php echo date("d/m/Y"); ?></div>
                 </div>
                 <div class="body-full">
                     <div style="text-align:center;">
-                        <svg id="barcode" style="width:240px; height:60px;"></svg>
+                        <svg id="barcode" style="width:280px; height:60px;"></svg>
                         <div class="id-full"><?php echo $id; ?></div>
                     </div>
-                    <div style="flex:1; font-size:20px;">
+                    <div style="flex:1; font-size:24px;">
                         <b>CLIENTE:</b> <?php echo htmlspecialchars($record['client']); ?><br>
                         <b>TÉCNICO:</b> <?php echo htmlspecialchars($record['technician']); ?>
                     </div>
@@ -137,7 +137,7 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                 <div class="inf-box">
                     <div class="inf-tag"><?php echo ($type==='repair' ? 'AVERÍA DECLARADA' : 'COMPONENTES Y/O S/N'); ?></div>
                     <?php if($type === 'repair'): ?>
-                        <div style="font-size:18px; font-weight:900; line-height: 1.1;"><?php echo nl2br(htmlspecialchars($record['problem'])); ?></div>
+                        <div style="font-size:22px; font-weight:900; line-height: 1.2;"><?php echo nl2br(htmlspecialchars($record['problem'])); ?></div>
                     <?php else: ?>
                         <table class="comp-table">
                             <?php foreach($record['components'] as $comp): ?>
@@ -150,7 +150,7 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                     <?php endif; ?>
                 </div>
                 <div class="footer-strip">
-                    <span style="font-size:10px; font-weight:bold;">v2.32 Final PRO</span>
+                    <span style="font-size:10px; font-weight:bold;">v2.35 Final PRO</span>
                 </div>
             <?php endif; ?>
         </div>
