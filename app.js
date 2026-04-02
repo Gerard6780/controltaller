@@ -417,10 +417,10 @@ document.addEventListener('click', (e) => {
         deleteRecord(id, type);
     } else if (e.target.classList.contains('btn-print-ref')) {
         const id = e.target.getAttribute('data-id');
-        printLabel(id, 'ql-570', 1, 'ref');
+        printLabel(id, 'QL-570', 1, 'ref'); // Brother QL (Upper)
     } else if (e.target.classList.contains('btn-print')) {
         const id = e.target.getAttribute('data-id');
-        printLabel(id); // Dispara el flujo automático (Ref + Informe) v2.29
+        printLabel(id, 'GK420d', 1, 'full'); // Zebra GK (Upper)
     }
 });
 

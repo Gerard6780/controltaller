@@ -19,7 +19,8 @@ $PRINTER_BROTHER = 'QL-570';
 
 // --- 2. CAPTURA DE PARÁMETROS ---
 $id = trim($_GET['id'] ?? '');
-$manualPrinter = $_GET['printer'] ?? null; 
+// Normalizar nombre de impresora a MAYÚSCULAS
+$manualPrinter = isset($_GET['printer']) ? strtoupper($_GET['printer']) : null; 
 $manualMode = $_GET['mode'] ?? 'full';     
 $manualCopies = $_GET['copies'] ?? 1;
 
@@ -155,7 +156,7 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
                     <?php endif; ?>
                 </div>
                 <div class="footer-strip">
-                    <span style="font-size:10px; font-weight:bold;">v2.27 PRO</span>
+                    <span style="font-size:10px; font-weight:bold;">v2.30 PRO Sync</span>
                 </div>
 <?php endif; ?>
         </div>
@@ -197,4 +198,4 @@ if ($manualPrinter) {
     }
 }
 
-echo json_encode(['status' => 'success', 'v' => '2.29', 'type' => $type]);
+echo json_encode(['status' => 'success', 'v' => '2.30', 'printer_used' => ($manualPrinter ?? 'AUTO')]);
