@@ -1,8 +1,7 @@
 <?php
 /**
- * MODUL4 - Linux Print Proxy for CUPS (v2.7 Hardware Rotation)
- * Diseño Horizontal en PDF (150x100) + Rotación por comando lp CUPS.
- * Mucho más robusto frente a variaciones de driver.
+ * MODUL4 - Linux Print Proxy for CUPS (v2.8 Full Width)
+ * Optimización de espacio para ocupar toda la etiqueta 150x100.
  */
 
 header('Content-Type: application/json');
@@ -82,31 +81,30 @@ ob_start();
 <meta charset='UTF-8'>
 <script src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'></script>
 <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; color: #111; background: #fff; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; color: #000; background: #fff; }
     
-    /* Layout v2.7 sin rotaciones CSS (limpio) */
     <?php if($isZebra): ?>
-    .ticket { width: 150mm; height: 100mm; padding: 8mm; box-sizing: border-box; display: flex; flex-direction: column; }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 12px; }
-    .header h1 { margin: 0; font-size: 18px; color: #cc0000; letter-spacing: 1px; }
-    .logo-img { height: 35px; }
+    .ticket { width: 150mm; height: 100mm; padding: 10mm; box-sizing: border-box; display: flex; flex-direction: column; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
+    .header h1 { margin: 0; font-size: 22px; color: #cc0000; text-transform: uppercase; }
+    .logo-img { height: 45px; }
 
-    .main { display: flex; gap: 20px; }
-    .barcode-area { flex: 0 0 250px; text-align: center; }
-    #barcode { width: 100%; height: 60px; }
-    .ref-text { font-size: 30px; font-weight: 900; margin-top: 5px; }
+    .main { display: flex; gap: 25px; margin-bottom: 10px; }
+    .barcode-area { flex: 0 0 280px; text-align: center; }
+    #barcode { width: 100%; height: 75px; }
+    .ref-text { font-size: 36px; font-weight: 900; margin-top: 5px; }
 
-    .data-area { flex: 1; font-size: 14px; }
+    .data-area { flex: 1; font-size: 16px; }
     .data-table { width: 100%; border-collapse: collapse; }
-    .data-table td { padding: 4px 0; border-bottom: 1px dotted #888; }
-    .lbl { font-weight: bold; width: 80px; color: #555; }
+    .data-table td { padding: 6px 0; border-bottom: 1px dotted #999; }
+    .lbl { font-weight: bold; width: 90px; color: #444; }
     
-    .details { margin-top: 15px; border: 1.5px solid #000; padding: 10px; flex-grow: 1; position: relative; }
-    .details-tag { position: absolute; top: -8px; left: 10px; background: #fff; padding: 0 5px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
-    .details-text { font-size: 13px; line-height: 1.5; color: #000; }
+    .details { margin-top: 5px; border: 2px solid #000; padding: 12px; flex-grow: 1; position: relative; border-radius: 5px; }
+    .details-tag { position: absolute; top: -10px; left: 15px; background: #fff; padding: 0 8px; font-size: 11px; font-weight: 900; text-transform: uppercase; border: 1px solid #000; border-radius: 3px; }
+    .details-text { font-size: 14px; line-height: 1.6; color: #000; }
 
-    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; font-size: 10px; }
-    .signature { width: 200px; text-align: center; border-top: 1px solid #000; padding-top: 5px; font-weight: bold; font-size: 12px; }
+    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 15px; font-size: 11px; }
+    .signature { width: 250px; text-align: center; border-top: 2px solid #000; padding-top: 8px; font-weight: bold; font-size: 13px; }
     
     <?php else: ?>
     .ticket-brother { width: 62mm; height: 29mm; padding: 3px; box-sizing: border-box; text-align: center; }
@@ -120,7 +118,10 @@ ob_start();
     <div class="ticket">
         <div class="header">
             <div><?php if($logoBase64): ?><img src="data:image/png;base64,<?php echo $logoBase64; ?>" class="logo-img"><?php endif; ?></div>
-            <div style="text-align:right"><h1>PARTE DE ENTRADA</h1><div style="font-size:10px;">PRODUCCIÓN MODUL 4</div></div>
+            <div style="text-align:right">
+                <h1>PARTE DE ENTRADA</h1>
+                <div style="font-size:12px; font-weight:bold; opacity:0.8;">MODUL 4 - CONTROL TALLER</div>
+            </div>
         </div>
 
         <div class="main">
@@ -130,7 +131,7 @@ ob_start();
             </div>
             <div class="data-area">
                 <table class="data-table">
-                    <tr><td class="lbl">CLIENTE:</td><td><?php echo htmlspecialchars($record['client']); ?></td></tr>
+                    <tr><td class="lbl">CLIENTE:</td><td style="font-weight:bold; font-size:18px;"><?php echo htmlspecialchars($record['client']); ?></td></tr>
                     <tr><td class="lbl">TÉCNICO:</td><td><?php echo htmlspecialchars($record['technician']); ?></td></tr>
                     <tr><td class="lbl">FECHA:</td><td><?php echo date("d/m/Y H:i", strtotime($record['date'])); ?></td></tr>
                 </table>
@@ -138,14 +139,14 @@ ob_start();
         </div>
 
         <div class="details">
-            <div class="details-tag"><?php echo ($type === 'repair') ? 'Problema a resolver' : 'Especificaciones'; ?></div>
+            <div class="details-tag"><?php echo ($type === 'repair') ? 'Fallo a Revisar' : 'Configuración de Hardware'; ?></div>
             <div class="details-text">
                 <?php if($type === 'repair'): ?>
                     <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
                 <?php else: ?>
-                    <div style="column-count: 2;">
+                    <div style="column-count: 2; column-gap: 30px;">
                         <?php foreach($record['components'] as $comp): ?>
-                            <div>• <strong><?php echo htmlspecialchars($comp['component_label']); ?>:</strong> <?php echo htmlspecialchars($comp['component_value']); ?></div>
+                            <div style="margin-bottom:4px; border-bottom: 1px solid #eee;">• <strong><?php echo htmlspecialchars($comp['component_label']); ?>:</strong> <?php echo htmlspecialchars($comp['component_value']); ?></div>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
@@ -153,8 +154,8 @@ ob_start();
         </div>
 
         <div class="footer">
-            <div>Fecha impresión: <?php echo date("d/m/Y H:i"); ?></div>
-            <div class="signature">FIRMA RECEPCIÓN CLIENTE</div>
+            <div style="font-style:italic;">Registro generado el <?php echo date("d/m/Y a las H:i"); ?></div>
+            <div class="signature">FIRMA CONFORMIDAD CLIENTE</div>
         </div>
     </div>
 <?php else: ?>
@@ -167,7 +168,7 @@ ob_start();
 
 <script>
     JsBarcode("#barcode", "<?php echo addslashes($id); ?>", {
-        format: "CODE128", displayValue: false, height: 50, margin: 0
+        format: "CODE128", displayValue: false, height: 60, margin: 0
     });
 </script>
 
@@ -178,8 +179,8 @@ $html = ob_get_clean();
 
 // --- 5. PRODUCCIÓN PDF ---
 $uid = uniqid();
-$htmlFile = "/tmp/print_$uid.html";
-$pdfFile = "/tmp/print_$uid.pdf";
+$htmlFile = "/tmp/full_print_$uid.html";
+$pdfFile = "/tmp/full_print_$uid.pdf";
 file_put_contents($htmlFile, $html);
 
 $cmdPdf = "wkhtmltopdf --enable-javascript --javascript-delay 300 "
@@ -192,28 +193,23 @@ exec($cmdPdf, $outPdf, $retPdf);
 
 if ($retPdf !== 0) {
     echo json_encode(['status' => 'error', 'message' => 'Error PDF', 'debug' => $outPdf]);
-    @unlink($htmlFile); exit;
+    exit;
 }
 
-// --- 6. ENVÍO A COLA CON ROTACIÓN POR COMMAND LINE ---
+// --- 6. ENVÍO A COLA (v2.8 con fit-to-page para maximizar espacio) ---
 $dest = ($printer === 'gk420d') ? 'GK420d' : 'QL-570';
 
-// La opción clave es -o orientation-requested=X. 
-// 4 = Landscape (Horizontal). Al ser un rollo de 100, CUPS girará el PDF de 150x100 perfectamente.
-$options = ($printer === 'gk420d') ? "-o orientation-requested=4 -o PageSize=Custom.100x150mm" : "";
+// La opción fit-to-page es clave para estirar el diseño hasta los bordes.
+$options = ($printer === 'gk420d') ? "-o orientation-requested=4 -o PageSize=Custom.100x150mm -o fit-to-page" : "";
 
 $cmdPrint = "lp -d " . escapeshellarg($dest) . " $options " . escapeshellarg($pdfFile) . " 2>&1";
 
-$allSuccess = true; $debugOutput = [];
-for ($i = 0; $i < $copies; $i++) {
-    exec($cmdPrint, $outT, $retT);
-    if ($retT !== 0) { $allSuccess = false; $debugOutput = array_merge($debugOutput, $outT); }
-}
+exec($cmdPrint, $outT, $retT);
 
 @unlink($htmlFile); @unlink($pdfFile);
 
-if ($allSuccess) {
-    echo json_encode(['status' => 'success', 'id' => $id, 'printer' => $dest, 'debug' => 'v2.7 OK']);
+if ($retT === 0) {
+    echo json_encode(['status' => 'success', 'id' => $id, 'printer' => $dest, 'debug' => 'v2.8 OK (fit-to-page)']);
 } else {
-    echo json_encode(['status' => 'error', 'message' => 'Error LP', 'debug' => $debugOutput]);
+    echo json_encode(['status' => 'error', 'message' => 'Error LP', 'debug' => $outT]);
 }
