@@ -168,8 +168,13 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1) {
     
     exec("wkhtmltopdf --dpi $dpi --page-width $w --page-height $h --margin-top 0 --margin-bottom 0 --margin-left 2 --margin-right 2 " . escapeshellarg($htmlFile) . " " . escapeshellarg($pdfFile));
     
-    $lpOptions = "-o scaling=100 -o orientation-requested=4 -n $copies -o PageSize=$pageSize";
-    exec("lp -d " . escapeshellarg($targetPrinter) . " $lpOptions " . escapeshellarg($pdfFile));
+    if ($targetPrinter === 'GK420d') {
+        $w = '100mm'; $h = '150mm'; $pageSize = '100x150mm'; $dpi = 203;
+        $lpOptions = "-o scaling=100 -o orientation-requested=3 -n $copies -o PageSize=$pageSize";
+    } else {
+        $w = '62mm'; $h = '29mm'; $pageSize = '62x29mm'; $dpi = 203;
+        $lpOptions = "-o scaling=100 -o orientation-requested=3 -n $copies -o PageSize=$pageSize";
+    }
     
     @unlink($htmlFile); @unlink($pdfFile);
     return true;
@@ -182,7 +187,7 @@ if ($manualPrinter) {
         processLabel($id, $record, 'ref', $PRINTER_BROTHER, 1);
         processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
     } else {
-        processLabel($id, $record, 'ref', $PRINTER_BROTHER, 2);
+        processLabel($id, $record, 'ref', $PRINTER_BROTHER, 1);
         processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
     }
 }
