@@ -1,8 +1,8 @@
 <?php
 /**
- * MODUL4 - Linux Print Proxy for CUPS (v2.10 Professional Balance)
- * Diseño con 'Caja de Seguridad' (142mm) para centrado perfecto sin recortes.
- * Corregidos solapamientos de elementos.
+ * MODUL4 - Linux Print Proxy for CUPS (v2.12 Occupation)
+ * Diseño de ocupación total forzando que el footer esté al final de los 150mm.
+ * v2.12 PRO.
  */
 
 header('Content-Type: application/json');
@@ -70,7 +70,7 @@ if (file_exists($logoPath)) {
     $logoBase64 = base64_encode(file_get_contents($logoPath));
 }
 
-// --- 4. CONFIGURACIÓN PÁGINA (Físico 150x100 para Landscape) ---
+// --- 4. CONFIGURACIÓN PÁGINA ---
 $isZebra = ($printer === 'gk420d');
 $w = $isZebra ? '150mm' : '62mm'; 
 $h = $isZebra ? '100mm' : '29mm';
@@ -82,46 +82,41 @@ ob_start();
 <meta charset='UTF-8'>
 <script src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'></script>
 <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; color: #000; background: #fff; width: 100%; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; color: #000; background: #fff; width: 100%; height: 100%; overflow: hidden; }
     
     <?php if($isZebra): ?>
-    /* CAJA DE SEGURIDAD v2.11: 142mm centrados con ligero desplazamiento a la derecha */
-    .ticket-container { width: 150mm; height: 100mm; position: relative; }
-    
     .ticket { 
-        width: 142mm; height: 94mm; 
-        margin: 3mm 0 3mm 6mm; /* Desplazamos a la derecha: 6mm de margen izquierdo */
-        padding: 4mm; box-sizing: border-box; 
+        width: 150mm; height: 100mm; padding: 4mm; box-sizing: border-box; 
         display: flex; flex-direction: column; 
-        background: #fff;
+        justify-content: space-between; /* ¡Esta es la clave para ocupar todo! */
     }
     
-    .header-banner { width: 100%; margin-bottom: 3mm; text-align: center; height: 22mm; overflow: hidden; }
+    .header-banner { width: 100%; margin-bottom: 2mm; text-align: center; height: 20mm; overflow: hidden; }
     .banner-img { width: 100%; height: 100%; object-fit: contain; }
 
-    .meta-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2mm; border-bottom: 2px solid #000; padding-bottom: 2px; }
-    .meta-title { font-size: 16px; font-weight: 800; color: #cc0000; text-transform: uppercase; }
+    .meta-row { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #000; padding-bottom: 2px; }
+    .meta-title { font-size: 17px; font-weight: 800; color: #cc0000; }
     .meta-date { font-size: 11px; font-weight: bold; }
 
-    .main-body { display: flex; gap: 10mm; margin-top: 2mm; }
-    .barcode-col { flex: 0 0 50mm; text-align: center; }
+    .main-body { display: flex; gap: 8mm; margin-top: 1mm; }
+    .barcode-col { flex: 0 0 55mm; text-align: center; }
     #barcode { width: 100%; height: 50px; }
-    .ref-id { font-size: 34px; font-weight: 900; margin-top: 2px; }
+    .ref-id { font-size: 38px; font-weight: 900; margin-top: 2px; }
 
     .data-col { flex: 1; font-size: 14px; }
     .data-table { width: 100%; border-collapse: collapse; }
-    .data-table td { padding: 3px 0; border-bottom: 1px dotted #aaa; }
-    .lbl { font-weight: bold; width: 80px; color: #444; }
+    .data-table td { padding: 4px 0; border-bottom: 1px dotted #888; }
+    .lbl { font-weight: bold; width: 90px; color: #333; }
     
     .details-box { 
-        margin-top: 4mm; border: 1.5px solid #000; padding: 8px; flex: 1; 
-        position: relative; border-radius: 3px;
+        margin-top: 2mm; border: 1.5px solid #000; padding: 10px; 
+        position: relative; border-radius: 4px; min-height: 25mm;
     }
-    .details-tag { position: absolute; top: -8px; left: 10px; background: #fff; padding: 0 5px; font-size: 9px; font-weight: 900; text-transform: uppercase; }
-    .details-content { font-size: 12px; line-height: 1.4; max-height: 30mm; overflow: hidden; }
+    .details-tag { position: absolute; top: -10px; left: 10px; background: #fff; padding: 0 5px; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+    .details-content { font-size: 13px; line-height: 1.5; color: #000; }
 
-    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4mm; }
-    .signature { width: 220px; text-align: center; border-top: 2px solid #000; padding-top: 4px; font-weight: 800; font-size: 13px; }
+    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; }
+    .signature { width: 280px; text-align: center; border-top: 2.5px solid #000; padding-top: 5px; font-weight: 900; font-size: 15px; }
     
     <?php else: ?>
     .ticket-brother { width: 62mm; height: 29mm; padding: 3px; box-sizing: border-box; text-align: center; }
@@ -132,8 +127,8 @@ ob_start();
 <body>
 
 <?php if($isZebra): ?>
-    <div class="ticket-container">
-        <div class="ticket">
+    <div class="ticket">
+        <div class="header-container">
             <div class="header-banner">
                 <?php if($logoBase64): ?>
                     <img src="data:image/png;base64,<?php echo $logoBase64; ?>" class="banner-img">
@@ -142,7 +137,7 @@ ob_start();
 
             <div class="meta-row">
                 <div class="meta-title">Parte de Entrada Servicio Técnico</div>
-                <div class="meta-date"><?php echo date("d/m/Y H:i", strtotime($record['date'])); ?></div>
+                <div class="meta-date">v2.12 | <?php echo date("d/m/Y H:i", strtotime($record['date'])); ?></div>
             </div>
 
             <div class="main-body">
@@ -152,32 +147,32 @@ ob_start();
                 </div>
                 <div class="data-col">
                     <table class="data-table">
-                        <tr><td class="lbl">CLIENTE:</td><td style="font-weight:800; font-size:17px;"><?php echo htmlspecialchars($record['client']); ?></td></tr>
+                        <tr><td class="lbl">CLIENTE:</td><td style="font-weight:900; font-size:18px;"><?php echo htmlspecialchars($record['client']); ?></td></tr>
                         <tr><td class="lbl">TÉCNICO:</td><td><?php echo htmlspecialchars($record['technician']); ?></td></tr>
-                        <tr><td class="lbl">FECHA:</td><td><?php echo date("d/m/Y H:i", strtotime($record['date'])); ?></td></tr>
+                        <tr><td class="lbl">EMITIDO:</td><td><?php echo date("d/m/Y H:i"); ?></td></tr>
                     </table>
                 </div>
             </div>
+        </div>
 
-            <div class="details-box">
-                <div class="details-tag"><?php echo ($type === 'repair') ? 'Problema' : 'Componentes'; ?></div>
-                <div class="details-content">
-                    <?php if($type === 'repair'): ?>
-                        <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
-                    <?php else: ?>
-                        <div style="column-count: 2; font-size: 11px;">
-                            <?php foreach($record['components'] as $comp): ?>
-                                <div>• <strong><?php echo htmlspecialchars($comp['component_label']); ?>:</strong> <?php echo htmlspecialchars($comp['component_value']); ?></div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
+        <div class="details-box">
+            <div class="details-tag"><?php echo ($type === 'repair') ? 'Informe' : 'Componentes'; ?></div>
+            <div class="details-content">
+                <?php if($type === 'repair'): ?>
+                    <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
+                <?php else: ?>
+                    <div style="column-count: 2; font-size: 11px;">
+                        <?php foreach($record['components'] as $comp): ?>
+                            <div>• <strong><?php echo htmlspecialchars($comp['component_label']); ?>:</strong> <?php echo htmlspecialchars($comp['component_value']); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
+        </div>
 
-            <div class="footer">
-                <div style="font-size: 9px; opacity:0.6;">v2.10 PRO | MODUL 4</div>
-                <div class="signature"> FIRMA CONFORMIDAD CLIENTE</div>
-            </div>
+        <div class="footer">
+            <div style="font-size: 10px; opacity:0.6;">SISTEMA CONTROL MODUL 4</div>
+            <div class="signature">FIRMA CONFORMIDAD CLIENTE</div>
         </div>
     </div>
 <?php else: ?>
@@ -200,11 +195,11 @@ $html = ob_get_clean();
 
 // --- 5. PRODUCCIÓN PDF ---
 $uid = uniqid();
-$htmlFile = "/tmp/print_$uid.html";
-$pdfFile = "/tmp/print_$uid.pdf";
+$htmlFile = "/tmp/full_$uid.html";
+$pdfFile = "/tmp/full_$uid.pdf";
 file_put_contents($htmlFile, $html);
 
-// v2.10: Añadimos viewport-size para forzar escala correcta
+// v2.12: Uso de zoom y DPI específicos para maximizar nitidez y tamaño.
 $cmdPdf = "wkhtmltopdf --enable-javascript --javascript-delay 300 "
         . "--viewport-size 1280x800 --disable-smart-shrinking --dpi 203 "
         . "--page-width $w --page-height $h "
@@ -221,7 +216,7 @@ if ($retPdf !== 0) {
 
 // --- 6. ENVÍO A COLA ---
 $dest = ($printer === 'gk420d') ? 'GK420d' : 'QL-570';
-// Quitamos fit-to-page en v2.10 porque ya estamos centrando nosotros con margen de seguridad
+// En v2.12 el escalado se controla desde el HTML/PDF, así que dejamos el driver en bypass.
 $options = ($printer === 'gk420d') ? "-o orientation-requested=4 -o PageSize=Custom.100x150mm" : "";
 
 $cmdPrint = "lp -d " . escapeshellarg($dest) . " $options " . escapeshellarg($pdfFile) . " 2>&1";
@@ -231,7 +226,7 @@ exec($cmdPrint, $outT, $retT);
 @unlink($htmlFile); @unlink($pdfFile);
 
 if ($retT === 0) {
-    echo json_encode(['status' => 'success', 'id' => $id, 'printer' => $dest, 'debug' => 'v2.10 PRO OK']);
+    echo json_encode(['status' => 'success', 'id' => $id, 'printer' => $dest, 'debug' => 'v2.12 FULL-STRETCH OK']);
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Error LP', 'debug' => $outT]);
 }
