@@ -755,8 +755,9 @@ textarea:focus {
 }
 
 /* Columnas fijas */
-.history-table td:nth-child(1) { width: 85px; font-weight: bold; } /* REF */
-.history-table td:nth-child(2) { width: 100px; } /* Tipo */
+.history-table td:nth-child(1) { width: 70px; font-weight: bold; text-align: center; } /* REF */
+.history-table td:nth-child(2) { width: 85px; text-align: center; } /* Tipo */
+.history-table td:nth-child(4) { width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* Técnico */
 .history-table td:nth-child(5) { width: 75px; text-align: center; white-space: nowrap; } /* Fecha */
 .history-table td:nth-child(6) { width: 130px; text-align: center; } /* Estado */
 
