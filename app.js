@@ -291,7 +291,7 @@ function saveRecord(record) {
             if (sorted.length === 0) {
                 const tr = document.createElement('tr');
                 tr.className = 'row-empty';
-                tr.innerHTML = `<td colspan="6" class="empty-row">No hay registros con estos filtros.</td>`;
+                tr.innerHTML = `<td colspan="9" class="empty-row">No hay registros con estos filtros.</td>`;
                 historyTableBody.appendChild(tr);
                 return;
             }
@@ -316,11 +316,13 @@ function saveRecord(record) {
                             ${r.delivered == 1 ? '✅ Entregado' : '⏳ Pendiente'}
                         </span>
                     </td>
-                    <td>${r.type === 'repair' ? r.problem : ''}</td>
-                    <td class="actions-cell">
+                    <td style="text-align: center;">
                         <button class="btn-action btn-status" data-id="${r.id}" data-type="${r.type}" data-delivered="${r.delivered}" title="${r.delivered == 1 ? 'Marcar como Pendiente' : 'Marcar como Entregado'}">
                             ${r.delivered == 1 ? '⏳' : '✅'}
                         </button>
+                    </td>
+                    <td>${r.type === 'repair' ? r.problem : ''}</td>
+                    <td class="actions-cell">
                         <button class="btn-action btn-edit" data-id="${r.id}" data-type="${r.type}" title="Editar registro">✏️</button>
                         <button class="btn-action btn-delete" data-id="${r.id}" data-type="${r.type}" title="Eliminar registro">🗑️</button>
                         <button class="btn-action btn-print-ref" data-id="${r.id}" title="Imprimir Etiqueta Brother">🏷️</button>

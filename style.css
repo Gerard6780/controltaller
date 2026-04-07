@@ -61,7 +61,7 @@ body {
 /* Terra Header */
 .terra-header {
     width: 100%;
-    padding: 1.5rem 3rem;
+    padding: 1rem 1.5rem;
     display: flex;
     flex-direction: column;
 }
@@ -761,8 +761,14 @@ textarea:focus {
 .history-table td:nth-child(5) { width: 75px; text-align: center; white-space: nowrap; } /* Fecha */
 .history-table td:nth-child(6) { width: 130px; text-align: center; } /* Estado */
 
-/* Columna de Problema truncada */
+/* Columna de Entrega Dedicada */
 .history-table td:nth-child(7) { 
+    width: 50px; 
+    text-align: center;
+}
+
+/* Columna de Problema truncada (ahora 8ª) */
+.history-table td:nth-child(8) { 
     max-width: 140px;
     white-space: nowrap;
     overflow: hidden;
@@ -771,14 +777,13 @@ textarea:focus {
     opacity: 0.9;
 }
 
-/* Botones de acción compactos en cuadrícula 2xN */
+/* Botones de acción compactos en cuadrícula 2x2 */
 .actions-cell {
     display: grid;
     grid-template-columns: repeat(2, 32px);
     gap: 5px;
     justify-content: center;
-    padding: 0.5rem !important;
-    width: 75px;
+    padding: 0.3rem !important;
 }
 
 .actions-cell .btn-action {
