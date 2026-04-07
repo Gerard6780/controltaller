@@ -363,32 +363,52 @@ let currentSortDirection = {
 headerSortButtons.forEach(th => {
     th.addEventListener('click', () => {
         const sortKey = th.getAttribute('data-sort');
+        
+        // Ciclo: ninguno -> asc -> desc -> ninguno
+        let currentState = th.getAttribute('data-sort-state') || 'none';
+        let newState;
+        if (currentState === 'none') newState = 'asc';
+        else if (currentState === 'asc') newState = 'desc';
+        else newState = 'none';
 
-        // Alternar dirección para date y por defecto asc para otros
-        const direction = currentSortDirection[sortKey] === 'asc' ? 'desc' : 'asc';
-        currentSortDirection[sortKey] = direction;
+        // Actualizar visualmente todos los headers
+        headerSortButtons.forEach(h => {
+            h.classList.remove('active-sort', 'asc', 'desc');
+            h.setAttribute('data-sort-state', 'none');
+        });
 
-        // Actualizar selector visual y estado
-        headerSortButtons.forEach(h => h.classList.remove('active-sort', 'asc', 'desc'));
-        th.classList.add('active-sort', direction);
-        th.setAttribute('data-sort-dir', direction);
+        let sortValue = 'date_desc'; // Por defecto
+
+        if (newState !== 'none') {
+            th.classList.add('active-sort', newState);
+            th.setAttribute('data-sort-state', newState);
+            
+            if (sortKey === 'date') {
+                sortValue = `date_${newState}`;
+            } else {
+                sortValue = newState === 'asc' ? sortKey : `${sortKey}_desc`; // Simplificación o ajuste según backend
+                // Nota: El backend espera 'sortFilter'. Si enviamos 'client' suele ser asc. 
+                // Para simplificar, si es 'desc' concatenamos o manejamos según soporte.
+                // Ajustamos para que coincida con lo que espera loadHistory/get_records.php
+                if (newState === 'desc') {
+                    if (sortKey === 'id') sortValue = 'id_desc';
+                    else if (sortKey === 'client') sortValue = 'client_desc';
+                    else if (sortKey === 'technician') sortValue = 'tech_desc';
+                    else if (sortKey === 'problem') sortValue = 'problem_desc';
+                } else {
+                    sortValue = sortKey;
+                }
+            }
+        }
 
         const ref = searchRefInput.value.trim();
         const type = document.getElementById('history-type-filter').value;
         const client = document.getElementById('history-client-filter').value.trim();
         const tech = document.getElementById('history-tech-filter').value.trim();
         const problem = document.getElementById('history-problem-filter').value.trim();
+        const delivered = document.getElementById('history-delivered-filter').value;
 
-        let sortValue;
-        if (sortKey === 'date') {
-            sortValue = `date_${direction}`;
-        } else if (sortKey === 'problem') {
-            sortValue = 'problem';
-        } else {
-            sortValue = sortKey;
-        }
-
-        loadHistory(ref, type, client, tech, problem, sortValue);
+        loadHistory(ref, type, client, tech, problem, sortValue, delivered);
     });
 });
 
