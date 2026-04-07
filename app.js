@@ -338,15 +338,65 @@ function saveRecord(record) {
         });
 }
 
-btns.search.addEventListener('click', () => {
+// --- LIVE SEARCH LOGIC v2.57 ---
+function triggerLiveSearch() {
     const ref = searchRefInput.value.trim();
     const type = document.getElementById('history-type-filter').value;
     const client = document.getElementById('history-client-filter').value.trim();
     const tech = document.getElementById('history-tech-filter').value.trim();
     const problem = document.getElementById('history-problem-filter').value.trim();
     const delivered = document.getElementById('history-delivered-filter').value;
-    const sort = 'date_desc';
-    loadHistory(ref, type, client, tech, problem, sort, delivered);
+    
+    // Obtenemos el orden actual si hay alguno activo
+    let sortValue = 'date_desc';
+    const activeHeader = document.querySelector('#history-table thead th.active-sort');
+    if (activeHeader) {
+        const key = activeHeader.getAttribute('data-sort');
+        const state = activeHeader.getAttribute('data-sort-state');
+        if (state !== 'none') {
+            if (key === 'date') sortValue = `date_${state}`;
+            else {
+                if (state === 'desc') {
+                    if (key === 'id') sortValue = 'id_desc';
+                    else if (key === 'client') sortValue = 'client_desc';
+                    else if (key === 'technician') sortValue = 'tech_desc';
+                    else if (key === 'problem') sortValue = 'problem_desc';
+                } else {
+                    sortValue = key;
+                }
+            }
+        }
+    }
+
+    loadHistory(ref, type, client, tech, problem, sortValue, delivered);
+}
+
+// Función Debounce para no saturar el servidor
+function debounce(func, timeout = 300) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    };
+}
+
+const debouncedSearch = debounce(() => triggerLiveSearch());
+
+// Asignar eventos live
+[searchRefInput, 
+ document.getElementById('history-client-filter'), 
+ document.getElementById('history-tech-filter'), 
+ document.getElementById('history-problem-filter')].forEach(el => {
+    el.addEventListener('input', debouncedSearch);
+});
+
+[document.getElementById('history-type-filter'),
+ document.getElementById('history-delivered-filter')].forEach(el => {
+    el.addEventListener('change', triggerLiveSearch);
+});
+
+btns.search.addEventListener('click', () => {
+    triggerLiveSearch();
 });
 
 // Ordenación por click en columnas
