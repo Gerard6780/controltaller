@@ -757,7 +757,7 @@ textarea:focus {
 /* Columnas fijas */
 .history-table td:nth-child(1) { width: 85px; font-weight: bold; } /* REF */
 .history-table td:nth-child(2) { width: 100px; } /* Tipo */
-.history-table td:nth-child(5) { width: 120px; white-space: nowrap; } /* Fecha */
+.history-table td:nth-child(5) { width: 75px; text-align: center; white-space: nowrap; } /* Fecha */
 .history-table td:nth-child(6) { width: 130px; text-align: center; } /* Estado */
 
 /* Columna de Problema truncada */
