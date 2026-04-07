@@ -344,8 +344,8 @@ btns.search.addEventListener('click', () => {
     const client = document.getElementById('history-client-filter').value.trim();
     const tech = document.getElementById('history-tech-filter').value.trim();
     const problem = document.getElementById('history-problem-filter').value.trim();
-    const sort = document.getElementById('history-sort-filter').value;
     const delivered = document.getElementById('history-delivered-filter').value;
+    const sort = 'date_desc';
     loadHistory(ref, type, client, tech, problem, sort, delivered);
 });
 
@@ -369,7 +369,6 @@ headerSortButtons.forEach(th => {
         currentSortDirection[sortKey] = direction;
 
         // Actualizar selector visual y estado
-        document.getElementById('history-sort-filter').value = sortKey === 'date' ? `date_${direction}` : sortKey;
         headerSortButtons.forEach(h => h.classList.remove('active-sort', 'asc', 'desc'));
         th.classList.add('active-sort', direction);
         th.setAttribute('data-sort-dir', direction);
@@ -409,8 +408,9 @@ function showView(viewName) {
         const client = document.getElementById('history-client-filter').value.trim();
         const tech = document.getElementById('history-tech-filter').value.trim();
         const problem = document.getElementById('history-problem-filter').value.trim();
-        const sort = document.getElementById('history-sort-filter').value;
-        loadHistory(ref, type, client, tech, problem, sort);
+        const delivered = document.getElementById('history-delivered-filter').value;
+        const sort = 'date_desc';
+        loadHistory(ref, type, client, tech, problem, sort, delivered);
     }
 }
 
@@ -420,7 +420,6 @@ document.getElementById('btn-clear-filters').addEventListener('click', () => {
     document.getElementById('history-client-filter').value = '';
     document.getElementById('history-tech-filter').value = '';
     document.getElementById('history-problem-filter').value = '';
-    document.getElementById('history-sort-filter').value = 'date_desc';
     document.getElementById('history-delivered-filter').value = '';
     loadHistory();
 });
