@@ -315,10 +315,13 @@ function saveRecord(record) {
                     </td>
                     <td>${r.type === 'repair' ? r.problem : ''}</td>
                     <td class="actions-cell">
-                        <button class="btn-action btn-edit" data-id="${r.id}" data-type="${r.type}">✏️ Editar</button>
-                        <button class="btn-action btn-delete" data-id="${r.id}" data-type="${r.type}">🗑️ Eliminar</button>
-                        <button class="btn-action btn-print-ref" data-id="${r.id}">🏷️ Ref</button>
-                        <button class="btn-action btn-print" data-id="${r.id}">🖨️ Parte</button>
+                        <button class="btn-action btn-status" data-id="${r.id}" data-type="${r.type}" data-delivered="${r.delivered}" title="${r.delivered == 1 ? 'Marcar como Pendiente' : 'Marcar como Entregado'}">
+                            ${r.delivered == 1 ? '⏳' : '✅'}
+                        </button>
+                        <button class="btn-action btn-edit" data-id="${r.id}" data-type="${r.type}" title="Editar registro">✏️</button>
+                        <button class="btn-action btn-delete" data-id="${r.id}" data-type="${r.type}" title="Eliminar registro">🗑️</button>
+                        <button class="btn-action btn-print-ref" data-id="${r.id}" title="Imprimir Etiqueta Brother">🏷️</button>
+                        <button class="btn-action btn-print" data-id="${r.id}" title="Imprimir Informe Zebra">🖨️</button>
                     </td>
                 `;
                 historyTableBody.appendChild(tr);
@@ -433,8 +436,40 @@ document.addEventListener('click', (e) => {
     } else if (e.target.classList.contains('btn-print')) {
         const id = e.target.getAttribute('data-id');
         printLabel(id, 'GK420d', 1, 'full'); // Solo el informe (Zebra)
+    } else if (e.target.classList.contains('btn-status')) {
+        const id = e.target.getAttribute('data-id');
+        const type = e.target.getAttribute('data-type');
+        const currentDelivered = e.target.getAttribute('data-delivered') == 1;
+        toggleStatus(id, type, currentDelivered);
     }
 });
+
+function toggleStatus(id, type, currentDelivered) {
+    // Primero obtenemos el registro completo para no perder datos al actualizar
+    fetch(`get_records.php?ref=${encodeURIComponent(id)}`)
+        .then(res => res.json())
+        .then(records => {
+            const record = records.find(r => r.id === id);
+            if (!record) return;
+
+            const newData = { ...record, delivered: currentDelivered ? 0 : 1 };
+            updateRecord(newData)
+                .then(res => {
+                    if (res.status === 'success') {
+                        showToast(newData.delivered ? 'Equipo ENTREGADO ✅' : 'Equipo PENDIENTE ⏳');
+                        loadHistory(
+                            searchRefInput.value.trim(),
+                            document.getElementById('history-type-filter').value,
+                            document.getElementById('history-client-filter').value.trim(),
+                            document.getElementById('history-tech-filter').value.trim(),
+                            document.getElementById('history-problem-filter').value.trim(),
+                            document.getElementById('history-sort-filter').value,
+                            document.getElementById('history-delivered-filter').value
+                        );
+                    }
+                });
+        });
+}
 
 // Modal de edición
 const editModal = document.getElementById('edit-modal');
