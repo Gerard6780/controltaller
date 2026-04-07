@@ -770,16 +770,28 @@ textarea:focus {
     opacity: 0.9;
 }
 
-/* Botones de acción más pequeños */
+/* Botones de acción compactos y ordenados */
 .actions-cell {
     white-space: nowrap;
-    width: 10px; /* Ajuste automático al contenido */
+    width: 1px; /* Mínimo posible */
 }
 
 .actions-cell .btn-action {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.75rem;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
     margin: 1px;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.actions-cell .btn-action:hover {
+    transform: scale(1.15);
 }
 
 .row-empty td {
