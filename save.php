@@ -33,8 +33,8 @@ try {
     $pdo->beginTransaction();
 
     if ($type === 'repair') {
-        $stmt = $pdo->prepare("INSERT INTO repairs (id, client, technician, problem, date) VALUES (?,?,?,?,?)");
-        $stmt->execute([$data['id'], $data['client'], $data['technician'], $data['problem'], $data['date']]);
+        $stmt = $pdo->prepare("INSERT INTO repairs (id, client, technician, problem, accessories, date) VALUES (?,?,?,?,?,?)");
+        $stmt->execute([$data['id'], $data['client'], $data['technician'], $data['problem'], $data['accessories'] ?? '', $data['date']]);
     }
     elseif ($type === 'creation') {
         $stmt = $pdo->prepare("INSERT INTO creations (id, client, technician, date) VALUES (?,?,?,?)");

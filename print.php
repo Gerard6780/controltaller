@@ -269,8 +269,9 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1)
                 <div class="inf-box">
                     <div class="inf-tag"><?php echo ($type === 'repair' ? 'AVERÍA DECLARADA' : 'COMPONENTES Y/O S/N'); ?></div>
                     <?php if ($type === 'repair'): ?>
-                        <div style="font-size:22px; font-weight:900; line-height: 1.2;">
-                            <?php echo nl2br(htmlspecialchars($record['problem'])); ?></div>
+                        <div style="font-size:20px; font-weight:900; line-height: 1.1;">
+                            <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
+                        </div>
                     <?php else: ?>
                         <table class="comp-table">
                             <?php foreach ($record['components'] as $comp): ?>
@@ -282,9 +283,15 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1)
                         </table>
                     <?php endif; ?>
                 </div>
-                <div class="footer-strip">
-                    <span style="font-size:10px; font-weight:bold;">v2.38 Final PRO</span>
-                </div>
+
+                <?php if ($type === 'repair' && !empty($record['accessories'])): ?>
+                    <div class="inf-box" style="margin-top: 15px;">
+                        <div class="inf-tag">ACCESORIOS INCLUIDOS</div>
+                        <div style="font-size:18px; font-weight:800; line-height: 1.1; color: #333;">
+                            <?php echo nl2br(htmlspecialchars($record['accessories'])); ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
         <script>

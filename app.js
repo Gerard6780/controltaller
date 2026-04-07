@@ -125,7 +125,8 @@ forms.repair.addEventListener('submit', (e) => {
         date: new Date().toISOString().slice(0, 19).replace('T', ' '),
         client: document.getElementById('rep-client').value,
         technician: document.getElementById('rep-tech').value,
-        problem: document.getElementById('rep-problem').value
+        problem: document.getElementById('rep-problem').value,
+        accessories: document.getElementById('rep-accessories').value
     };
 
     saveRecord(data)
@@ -455,10 +456,13 @@ function openEditModal(id, type) {
 
             if (record.type === 'repair') {
                 document.getElementById('edit-problem-group').style.display = 'block';
+                document.getElementById('edit-accessories-group').style.display = 'block';
                 document.getElementById('edit-components-group').style.display = 'none';
                 document.getElementById('edit-problem').value = record.problem;
+                document.getElementById('edit-accessories').value = record.accessories || '';
             } else {
                 document.getElementById('edit-problem-group').style.display = 'none';
+                document.getElementById('edit-accessories-group').style.display = 'none';
                 document.getElementById('edit-components-group').style.display = 'block';
 
                 const defaultComponents = [
@@ -520,6 +524,7 @@ editForm.addEventListener('submit', (e) => {
 
     if (data.type === 'repair') {
         data.problem = document.getElementById('edit-problem').value;
+        data.accessories = document.getElementById('edit-accessories').value;
     } else {
         const componentFields = Array.from(editComponentsList.querySelectorAll('.component-field'));
         data.components = componentFields.map(field => ({

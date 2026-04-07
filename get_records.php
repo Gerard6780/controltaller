@@ -26,10 +26,10 @@ try {
     // Reparaciones
     if ($typeFilter === '' || $typeFilter === 'repair') {
         if ($refFilter) {
-            $stmtRepair = $pdo->prepare("SELECT id, 'repair' AS type, client, technician, problem, date FROM repairs WHERE id LIKE ? ORDER BY date DESC");
+            $stmtRepair = $pdo->prepare("SELECT id, 'repair' AS type, client, technician, problem, accessories, date FROM repairs WHERE id LIKE ? ORDER BY date DESC");
             $stmtRepair->execute([$refLike]);
         } else {
-            $stmtRepair = $pdo->query("SELECT id, 'repair' AS type, client, technician, problem, date FROM repairs ORDER BY date DESC LIMIT 100");
+            $stmtRepair = $pdo->query("SELECT id, 'repair' AS type, client, technician, problem, accessories, date FROM repairs ORDER BY date DESC LIMIT 100");
         }
         $repairs = $stmtRepair->fetchAll();
     }

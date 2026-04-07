@@ -34,8 +34,8 @@ try {
     $pdo->beginTransaction();
 
     if ($type === 'repair') {
-        $stmt = $pdo->prepare("UPDATE repairs SET client = ?, technician = ?, problem = ? WHERE id = ?");
-        $stmt->execute([$data['client'], $data['technician'], $data['problem'], $id]);
+        $stmt = $pdo->prepare("UPDATE repairs SET client = ?, technician = ?, problem = ?, accessories = ? WHERE id = ?");
+        $stmt->execute([$data['client'], $data['technician'], $data['problem'], $data['accessories'] ?? '', $id]);
     }
     elseif ($type === 'creation') {
         $stmt = $pdo->prepare("UPDATE creations SET client = ?, technician = ? WHERE id = ?");

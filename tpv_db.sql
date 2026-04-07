@@ -11,6 +11,7 @@ CREATE TABLE repairs (
     client VARCHAR(100) NOT NULL,
     technician VARCHAR(100) NOT NULL,
     problem TEXT,
+    accessories TEXT,
     date DATETIME NOT NULL
 );
 
