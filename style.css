@@ -771,14 +771,14 @@ textarea:focus {
     opacity: 0.9;
 }
 
-/* Botones de acción compactos de 2 en 2 */
+/* Botones de acción compactos en cuadrícula 2xN */
 .actions-cell {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, 32px);
+    gap: 5px;
     justify-content: center;
-    gap: 4px;
-    max-width: 75px; /* Forza el wrap a 2 columnas aprox */
-    padding: 0.4rem !important;
+    padding: 0.5rem !important;
+    width: 75px;
 }
 
 .actions-cell .btn-action {
