@@ -696,6 +696,7 @@ textarea:focus {
 
 .history-table {
     width: 100%;
+    min-width: 1000px;
     border-collapse: collapse;
     border: 1px solid rgba(255, 255, 255, 0.22);
     font-size: 0.85rem;
@@ -773,7 +774,8 @@ textarea:focus {
 /* Botones de acción compactos y ordenados */
 .actions-cell {
     white-space: nowrap;
-    width: 1px; /* Mínimo posible */
+    min-width: 180px;
+    text-align: center;
 }
 
 .actions-cell .btn-action {
