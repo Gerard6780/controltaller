@@ -762,7 +762,7 @@ textarea:focus {
 
 /* Columna de Problema truncada */
 .history-table td:nth-child(7) { 
-    max-width: 200px;
+    max-width: 140px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

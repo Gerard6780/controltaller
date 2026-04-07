@@ -307,7 +307,10 @@ function saveRecord(record) {
                     <td>${r.type === 'repair' ? 'Reparación' : 'Creación'}</td>
                     <td>${r.client}</td>
                     <td>${r.technician}</td>
-                    <td>${new Date(r.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <td>
+                        ${new Date(r.date).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' })}<br>
+                        <small style="opacity: 0.8;">${new Date(r.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</small>
+                    </td>
                     <td>
                         <span class="status-badge ${r.delivered == 1 ? 'status-delivered' : 'status-pending'}">
                             ${r.delivered == 1 ? '✅ Entregado' : '⏳ Pendiente'}
