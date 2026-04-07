@@ -696,7 +696,6 @@ textarea:focus {
 
 .history-table {
     width: 100%;
-    min-width: 1000px;
     border-collapse: collapse;
     border: 1px solid rgba(255, 255, 255, 0.22);
     font-size: 0.85rem;
@@ -771,11 +770,14 @@ textarea:focus {
     opacity: 0.9;
 }
 
-/* Botones de acción compactos y ordenados */
+/* Botones de acción compactos de 2 en 2 */
 .actions-cell {
-    white-space: nowrap;
-    min-width: 180px;
-    text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    max-width: 75px; /* Forza el wrap a 2 columnas aprox */
+    padding: 0.4rem !important;
 }
 
 .actions-cell .btn-action {
