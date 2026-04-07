@@ -240,7 +240,7 @@ function saveRecord(record) {
 }
 
 // --- HISTORY SCREEN ---
-function loadHistory(searchRef = '', typeFilter = '', clientFilter = '', techFilter = '', problemFilter = '', sortFilter = 'date_desc') {
+    function loadHistory(searchRef = '', typeFilter = '', clientFilter = '', techFilter = '', problemFilter = '', sortFilter = 'date_desc', deliveredFilter = '') {
     const params = new URLSearchParams();
     if (searchRef) params.set('ref', searchRef);
     if (typeFilter) params.set('type', typeFilter);
@@ -254,7 +254,8 @@ function loadHistory(searchRef = '', typeFilter = '', clientFilter = '', techFil
                 const matchTech = !techFilter || (r.technician || '').toLowerCase().includes(techFilter.toLowerCase());
                 const reviewText = r.problem || '';
                 const matchProblem = !problemFilter || reviewText.toLowerCase().includes(problemFilter.toLowerCase());
-                return matchClient && matchTech && matchProblem;
+                const matchDelivered = deliveredFilter === '' || String(r.delivered) === deliveredFilter;
+                return matchClient && matchTech && matchProblem && matchDelivered;
             });
 
             // Ordenado
@@ -297,13 +298,21 @@ function loadHistory(searchRef = '', typeFilter = '', clientFilter = '', techFil
 
             sorted.forEach(r => {
                 const tr = document.createElement('tr');
-                tr.className = r.type === 'repair' ? 'row-repair' : 'row-creation';
+                let rowClass = r.type === 'repair' ? 'row-repair' : 'row-creation';
+                if (r.delivered == 1) rowClass += ' is-delivered';
+                
+                tr.className = rowClass;
                 tr.innerHTML = `
                     <td>${r.id}</td>
                     <td>${r.type === 'repair' ? 'Reparación' : 'Creación'}</td>
                     <td>${r.client}</td>
                     <td>${r.technician}</td>
                     <td>${new Date(r.date).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <td>
+                        <span class="status-badge ${r.delivered == 1 ? 'status-delivered' : 'status-pending'}">
+                            ${r.delivered == 1 ? '✅ Entregado' : '⏳ Pendiente'}
+                        </span>
+                    </td>
                     <td>${r.type === 'repair' ? r.problem : ''}</td>
                     <td class="actions-cell">
                         <button class="btn-action btn-edit" data-id="${r.id}" data-type="${r.type}">✏️ Editar</button>
@@ -328,7 +337,8 @@ btns.search.addEventListener('click', () => {
     const tech = document.getElementById('history-tech-filter').value.trim();
     const problem = document.getElementById('history-problem-filter').value.trim();
     const sort = document.getElementById('history-sort-filter').value;
-    loadHistory(ref, type, client, tech, problem, sort);
+    const delivered = document.getElementById('history-delivered-filter').value;
+    loadHistory(ref, type, client, tech, problem, sort, delivered);
 });
 
 // Ordenación por click en columnas
@@ -403,6 +413,7 @@ document.getElementById('btn-clear-filters').addEventListener('click', () => {
     document.getElementById('history-tech-filter').value = '';
     document.getElementById('history-problem-filter').value = '';
     document.getElementById('history-sort-filter').value = 'date_desc';
+    document.getElementById('history-delivered-filter').value = '';
     loadHistory();
 });
 
@@ -443,6 +454,7 @@ function openEditModal(id, type) {
             document.getElementById('edit-type').value = record.type;
             document.getElementById('edit-client').value = record.client;
             document.getElementById('edit-tech').value = record.technician;
+            document.getElementById('edit-delivered').checked = record.delivered == 1;
 
             // Poblar técnicos
             editTechSelect.innerHTML = '';
@@ -520,6 +532,7 @@ editForm.addEventListener('submit', (e) => {
         type: document.getElementById('edit-type').value,
         client: document.getElementById('edit-client').value,
         technician: document.getElementById('edit-tech').value,
+        delivered: document.getElementById('edit-delivered').checked ? 1 : 0
     };
 
     if (data.type === 'repair') {

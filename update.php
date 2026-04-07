@@ -34,12 +34,12 @@ try {
     $pdo->beginTransaction();
 
     if ($type === 'repair') {
-        $stmt = $pdo->prepare("UPDATE repairs SET client = ?, technician = ?, problem = ?, accessories = ? WHERE id = ?");
-        $stmt->execute([$data['client'], $data['technician'], $data['problem'], $data['accessories'] ?? '', $id]);
+        $stmt = $pdo->prepare("UPDATE repairs SET client = ?, technician = ?, problem = ?, accessories = ?, delivered = ? WHERE id = ?");
+        $stmt->execute([$data['client'], $data['technician'], $data['problem'], $data['accessories'] ?? '', $data['delivered'] ?? 0, $id]);
     }
     elseif ($type === 'creation') {
-        $stmt = $pdo->prepare("UPDATE creations SET client = ?, technician = ? WHERE id = ?");
-        $stmt->execute([$data['client'], $data['technician'], $id]);
+        $stmt = $pdo->prepare("UPDATE creations SET client = ?, technician = ?, delivered = ? WHERE id = ?");
+        $stmt->execute([$data['client'], $data['technician'], $data['delivered'] ?? 0, $id]);
 
         // Eliminar componentes existentes y agregar nuevos
         $pdo->prepare("DELETE FROM creation_components WHERE creation_id = ?")->execute([$id]);

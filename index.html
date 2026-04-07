@@ -223,11 +223,13 @@
                         <option value="creation">Creación</option>
                     </select>
                     <select id="history-sort-filter">
-                        <option value="date_desc">Fecha (más reciente)</option>
-                        <option value="date_asc">Fecha (más antigua)</option>
-                        <option value="client">Cliente</option>
-                        <option value="technician">Técnico</option>
                         <option value="problem">Problema</option>
+                        <option value="id">REF</option>
+                    </select>
+                    <select id="history-delivered-filter">
+                        <option value="">Todos los estados</option>
+                        <option value="0">Pendientes ⏳</option>
+                        <option value="1">Entregados ✅</option>
                     </select>
                 </div>
 
@@ -245,6 +247,7 @@
                                 <th data-sort="client" class="sort-header">Cliente</th>
                                 <th data-sort="technician" class="sort-header">Técnico</th>
                                 <th data-sort="date" class="sort-header">Fecha</th>
+                                <th class="status-header">Estado</th>
                                 <th data-sort="problem" class="sort-header">Problema</th>
                                 <th>Acciones</th>
                             </tr>
@@ -276,6 +279,12 @@
                     <div id="edit-accessories-group" class="form-group">
                         <label for="edit-accessories">Accesorios Incluidos</label>
                         <textarea id="edit-accessories" placeholder="Cargador, cables, funda, etc..."></textarea>
+                    </div>
+                    <div class="form-group form-checkbox">
+                        <label for="edit-delivered">
+                            <input type="checkbox" id="edit-delivered">
+                            Entregado al cliente ✅
+                        </label>
                     </div>
                     <div id="edit-problem-group" class="form-group">
                         <label for="edit-problem">Problema</label>

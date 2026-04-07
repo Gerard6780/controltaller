@@ -26,10 +26,10 @@ try {
     // Reparaciones
     if ($typeFilter === '' || $typeFilter === 'repair') {
         if ($refFilter) {
-            $stmtRepair = $pdo->prepare("SELECT id, 'repair' AS type, client, technician, problem, accessories, date FROM repairs WHERE id LIKE ? ORDER BY date DESC");
+            $stmtRepair = $pdo->prepare("SELECT id, 'repair' AS type, client, technician, problem, accessories, delivered, date FROM repairs WHERE id LIKE ? ORDER BY date DESC");
             $stmtRepair->execute([$refLike]);
         } else {
-            $stmtRepair = $pdo->query("SELECT id, 'repair' AS type, client, technician, problem, accessories, date FROM repairs ORDER BY date DESC LIMIT 100");
+            $stmtRepair = $pdo->query("SELECT id, 'repair' AS type, client, technician, problem, accessories, delivered, date FROM repairs ORDER BY date DESC LIMIT 100");
         }
         $repairs = $stmtRepair->fetchAll();
     }
@@ -37,10 +37,10 @@ try {
     // Creaciones
     if ($typeFilter === '' || $typeFilter === 'creation') {
         if ($refFilter) {
-            $stmtCreation = $pdo->prepare("SELECT id, 'creation' AS type, client, technician, date FROM creations WHERE id LIKE ? ORDER BY date DESC");
+            $stmtCreation = $pdo->prepare("SELECT id, 'creation' AS type, client, technician, delivered, date FROM creations WHERE id LIKE ? ORDER BY date DESC");
             $stmtCreation->execute([$refLike]);
         } else {
-            $stmtCreation = $pdo->query("SELECT id, 'creation' AS type, client, technician, date FROM creations ORDER BY date DESC LIMIT 100");
+            $stmtCreation = $pdo->query("SELECT id, 'creation' AS type, client, technician, delivered, date FROM creations ORDER BY date DESC LIMIT 100");
         }
         $creations = $stmtCreation->fetchAll();
     }
