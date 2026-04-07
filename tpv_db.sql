@@ -32,14 +32,23 @@ CREATE TABLE IF NOT EXISTS creation_components (
     FOREIGN KEY (creation_id) REFERENCES creations(id) ON DELETE CASCADE
 );
 
--- Datos iniciales y de prueba
-INSERT IGNORE INTO technicians (name) VALUES ('Alex Linares'), ('Dani Honrado');
+-- Lista Completa de Técnicos
+TRUNCATE TABLE technicians;
+INSERT INTO technicians (name) VALUES 
+('Alex Linares'), 
+('Carlos Muñoz'), 
+('Stephane Geronimi'), 
+('Dani Honrado'), 
+('Gerard Anta'), 
+('Xavier Lamarca'), 
+('Daniel Palacios');
 
+-- Registros de Prueba
 INSERT IGNORE INTO repairs (id, client, technician, problem, accessories, delivered, date) 
-VALUES ('R-0000', 'Cliente de Prueba', 'Dani Honrado', 'Fallo de alimentación', 'Cargador', 0, NOW());
+VALUES ('R-0000', 'Cliente de Prueba', 'Dani Honrado', 'Fallo detectado post-traslado', 'Cargador', 0, NOW());
 
 INSERT IGNORE INTO creations (id, client, technician, delivered, date) 
-VALUES ('C-0000', 'Taller Test', 'Alex Linares', 0, NOW());
+VALUES ('C-0000', 'Taller Móvil Test', 'Alex Linares', 0, NOW());
 
 INSERT IGNORE INTO creation_components (creation_id, component_label, component_value) 
-VALUES ('C-0000', 'Placa Base', 'ASUS Z790'), ('C-0000', 'Gráfica', 'RTX 4070');
+VALUES ('C-0000', 'Chasis', 'Lian Li'), ('C-0000', 'Fuente', 'Corsair 850W');

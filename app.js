@@ -6,7 +6,7 @@ const STATE = {
     currentView: 'home',
     nextRepairId: parseInt(localStorage.getItem('nextRepairId')) || 1000,
     nextCreateId: parseInt(localStorage.getItem('nextCreateId')) || 5000,
-    technicians: ['Alex Linares', 'Carlos Muñoz', 'Stephane Geronimi', 'Dani Honrado', 'Gerard Anta', 'Xavier Lamarca', 'Daniel Palacios']
+    technicians: ['Alex Linares', 'Dani Honrado', 'Stephane Geronimi', 'Gerard Anta', 'Carlos Muñoz', 'Xavier Lamarca']
 };
 
 // --- DOM ELEMENTS ---
