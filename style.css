@@ -761,9 +761,9 @@ textarea:focus {
 .history-table td:nth-child(5) { width: 75px; text-align: center; white-space: nowrap; } /* Fecha */
 .history-table td:nth-child(6) { width: 130px; text-align: center; } /* Estado */
 
-/* Columna de Entrega Dedicada */
+/* Columna de Entrega Dedicada (Minimalista) */
 .history-table td:nth-child(7) { 
-    width: 50px; 
+    width: 40px; 
     text-align: center;
 }
 
