@@ -422,8 +422,8 @@ textarea:focus {
 }
 
 select option {
-    background-color: #161b22;
-    color: white;
+    background-color: white;
+    color: black;
 }
 
 /* Component Field as Rows */
