@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS creations (
     id VARCHAR(20) PRIMARY KEY,
     client VARCHAR(100) NOT NULL,
     technician VARCHAR(100) NOT NULL,
+    components TEXT,
     delivered TINYINT(1) DEFAULT 0,
     date DATETIME NOT NULL
 );
@@ -47,8 +48,8 @@ INSERT INTO technicians (name) VALUES
 INSERT IGNORE INTO repairs (id, client, technician, problem, accessories, delivered, date) 
 VALUES ('R-0000', 'Cliente de Prueba', 'Dani Honrado', 'Fallo detectado post-traslado', 'Cargador', 0, NOW());
 
-INSERT IGNORE INTO creations (id, client, technician, delivered, date) 
-VALUES ('C-0000', 'Taller Móvil Test', 'Alex Linares', 0, NOW());
+INSERT IGNORE INTO creations (id, client, technician, components, delivered, date) 
+VALUES ('C-0000', 'Taller Móvil Test', 'Alex Linares', '[{"label":"Chasis","value":"Lian Li"},{"label":"Fuente","value":"Corsair 850W"}]', 0, NOW());
 
 INSERT IGNORE INTO creation_components (creation_id, component_label, component_value) 
 VALUES ('C-0000', 'Chasis', 'Lian Li'), ('C-0000', 'Fuente', 'Corsair 850W');
