@@ -4,8 +4,8 @@
 
 const STATE = {
     currentView: 'home',
-    nextRepairId: parseInt(localStorage.getItem('nextRepairId')) || 1000,
-    nextCreateId: parseInt(localStorage.getItem('nextCreateId')) || 5000,
+    nextRepairId: null,
+    nextCreateId: null,
     technicians: ['Alex Linares', 'Dani Honrado', 'Stephane Geronimi', 'Gerard Anta', 'Carlos Muñoz', 'Xavier Lamarca']
 };
 
@@ -73,11 +73,33 @@ function showView(viewName) {
     STATE.currentView = viewName;
 
     if (viewName === 'repair') {
-        idDisplays.repair.textContent = `REF: R-${STATE.nextRepairId}`;
+        idDisplays.repair.textContent = `REF: Cargando...`;
+        fetchNextIds('repair');
     } else if (viewName === 'create') {
-        idDisplays.create.textContent = `REF: C-${STATE.nextCreateId}`;
+        idDisplays.create.textContent = `REF: Cargando...`;
+        fetchNextIds('create');
     } else if (viewName === 'history') {
         loadHistory(); // cargar registros al entrar a historial
+    }
+}
+
+async function fetchNextIds(type = 'both') {
+    try {
+        const res = await fetch('get_next_id.php');
+        const data = await res.json();
+        if (data.status === 'success') {
+            STATE.nextRepairId = data.nextRepairId;
+            STATE.nextCreateId = data.nextCreateId;
+            
+            if (type === 'repair' || type === 'both') {
+                idDisplays.repair.textContent = `REF: R-${STATE.nextRepairId}`;
+            }
+            if (type === 'create' || type === 'both') {
+                idDisplays.create.textContent = `REF: C-${STATE.nextCreateId}`;
+            }
+        }
+    } catch (err) {
+        console.error('Error al obtener IDs del servidor:', err);
     }
 }
 
@@ -132,8 +154,6 @@ forms.repair.addEventListener('submit', (e) => {
     saveRecord(data)
         .then(res => {
             if (res.status === 'success') {
-                STATE.nextRepairId++;
-                localStorage.setItem('nextRepairId', STATE.nextRepairId);
                 printLabel(data.id); // Flujo automático v2.22
                 showToast('Reparación registrada con éxito');
                 forms.repair.reset();
@@ -183,8 +203,6 @@ forms.create.addEventListener('submit', (e) => {
     saveRecord(data)
         .then(res => {
             if (res.status === 'success') {
-                STATE.nextCreateId++;
-                localStorage.setItem('nextCreateId', STATE.nextCreateId);
                 printLabel(data.id); // Flujo automático v2.22
                 showToast('Creación registrada con éxito');
                 forms.create.reset();
@@ -469,9 +487,11 @@ function showView(viewName) {
     STATE.currentView = viewName;
 
     if (viewName === 'repair') {
-        idDisplays.repair.textContent = `REF: R-${STATE.nextRepairId}`;
+        idDisplays.repair.textContent = `REF: Cargando...`;
+        fetchNextIds('repair');
     } else if (viewName === 'create') {
-        idDisplays.create.textContent = `REF: C-${STATE.nextCreateId}`;
+        idDisplays.create.textContent = `REF: Cargando...`;
+        fetchNextIds('create');
     } else if (viewName === 'history') {
         const ref = searchRefInput.value.trim();
         const type = document.getElementById('history-type-filter').value;
