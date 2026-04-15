@@ -74,12 +74,23 @@ function showView(viewName) {
 
     if (viewName === 'repair') {
         idDisplays.repair.textContent = `REF: Cargando...`;
+        const submitBtn = forms.repair.querySelector('.submit-btn');
+        if (submitBtn) submitBtn.disabled = true;
         fetchNextIds('repair');
     } else if (viewName === 'create') {
         idDisplays.create.textContent = `REF: Cargando...`;
+        const submitBtn = forms.create.querySelector('.submit-btn');
+        if (submitBtn) submitBtn.disabled = true;
         fetchNextIds('create');
     } else if (viewName === 'history') {
-        loadHistory(); // cargar registros al entrar a historial
+        const ref = searchRefInput.value.trim();
+        const type = document.getElementById('history-type-filter').value;
+        const client = document.getElementById('history-client-filter').value.trim();
+        const tech = document.getElementById('history-tech-filter').value.trim();
+        const problem = document.getElementById('history-problem-filter').value.trim();
+        const delivered = document.getElementById('history-delivered-filter').value;
+        const sort = 'date_desc';
+        loadHistory(ref, type, client, tech, problem, sort, delivered);
     }
 }
 
@@ -93,13 +104,18 @@ async function fetchNextIds(type = 'both') {
             
             if (type === 'repair' || type === 'both') {
                 idDisplays.repair.textContent = `REF: R-${STATE.nextRepairId}`;
+                const submitBtn = forms.repair.querySelector('.submit-btn');
+                if (submitBtn) submitBtn.disabled = false;
             }
             if (type === 'create' || type === 'both') {
                 idDisplays.create.textContent = `REF: C-${STATE.nextCreateId}`;
+                const submitBtn = forms.create.querySelector('.submit-btn');
+                if (submitBtn) submitBtn.disabled = false;
             }
         }
     } catch (err) {
         console.error('Error al obtener IDs del servidor:', err);
+        showToast('Error al sincronizar IDs con el servidor');
     }
 }
 
@@ -140,6 +156,11 @@ btns.addComponent.addEventListener('click', () => {
 // --- FORM HANDLING ---
 forms.repair.addEventListener('submit', (e) => {
     e.preventDefault();
+
+    if (!STATE.nextRepairId) {
+        showToast('Error: No se ha cargado la referencia. Reintenta.');
+        return;
+    }
 
     const data = {
         id: `R-${STATE.nextRepairId}`,
@@ -190,6 +211,11 @@ forms.create.addEventListener('submit', (e) => {
 
         return { label, value };
     }).filter(c => c.value.trim() !== '');
+
+    if (!STATE.nextCreateId) {
+        showToast('Error: No se ha cargado la referencia. Reintenta.');
+        return;
+    }
 
     const data = {
         id: `C-${STATE.nextCreateId}`,
@@ -480,29 +506,7 @@ headerSortButtons.forEach(th => {
     });
 });
 
-// Cargar siempre al mostrar historial
-function showView(viewName) {
-    Object.values(screens).forEach(s => s.classList.remove('active'));
-    screens[viewName].classList.add('active');
-    STATE.currentView = viewName;
-
-    if (viewName === 'repair') {
-        idDisplays.repair.textContent = `REF: Cargando...`;
-        fetchNextIds('repair');
-    } else if (viewName === 'create') {
-        idDisplays.create.textContent = `REF: Cargando...`;
-        fetchNextIds('create');
-    } else if (viewName === 'history') {
-        const ref = searchRefInput.value.trim();
-        const type = document.getElementById('history-type-filter').value;
-        const client = document.getElementById('history-client-filter').value.trim();
-        const tech = document.getElementById('history-tech-filter').value.trim();
-        const problem = document.getElementById('history-problem-filter').value.trim();
-        const delivered = document.getElementById('history-delivered-filter').value;
-        const sort = 'date_desc';
-        loadHistory(ref, type, client, tech, problem, sort, delivered);
-    }
-}
+// --- ELIMINADA DUPLICIDAD DE SHOWVIEW ---
 
 document.getElementById('btn-clear-filters').addEventListener('click', () => {
     document.getElementById('search-ref').value = '';
