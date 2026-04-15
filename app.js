@@ -98,6 +98,7 @@ async function fetchNextIds(type = 'both') {
     try {
         const res = await fetch('get_next_id.php');
         const data = await res.json();
+        console.log('DEBUG [NextID]:', data); // Para depuración en remoto
         if (data.status === 'success') {
             STATE.nextRepairId = data.nextRepairId;
             STATE.nextCreateId = data.nextCreateId;
