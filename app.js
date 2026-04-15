@@ -143,8 +143,9 @@ btns.addComponent.addEventListener('click', () => {
     const div = document.createElement('div');
     div.className = 'component-field';
     div.innerHTML = `
-        <input type="text" class="component-name" placeholder="Nombre componente" required>
-        <input type="text" class="component-value" placeholder="S/N o P/N" required>
+        <input type="text" class="component-name" placeholder="Nombre" required>
+        <input type="text" class="comp-pn" placeholder="P/N">
+        <input type="text" class="comp-sn" placeholder="S/N">
         <button type="button" class="remove-component">✖</button>
     `;
     componentsList.appendChild(div);
@@ -197,21 +198,15 @@ forms.create.addEventListener('submit', (e) => {
     const componentFields = Array.from(forms.create.querySelectorAll('.component-field'));
     const components = componentFields.map(field => {
         const nameInput = field.querySelector('.component-name');
-        const valueInput = field.querySelector('.component-value');
+        const pnInput = field.querySelector('.comp-pn');
+        const snInput = field.querySelector('.comp-sn');
 
-        let label;
-        let value;
+        let label = nameInput ? nameInput.value.trim() : (field.querySelector('.component-label')?.textContent || 'Extra');
+        let pn = pnInput ? pnInput.value.trim() : '';
+        let sn = snInput ? snInput.value.trim() : '';
 
-        if (nameInput && valueInput) {
-            label = nameInput.value.trim() || 'Extra';
-            value = valueInput.value.trim();
-        } else {
-            label = field.querySelector('.component-label')?.textContent || 'Extra';
-            value = field.querySelector('input')?.value.trim() || '';
-        }
-
-        return { label, value };
-    }).filter(c => c.value.trim() !== '');
+        return { label, pn, sn };
+    }).filter(c => c.pn !== '' || c.sn !== '');
 
     if (!STATE.nextCreateId) {
         showToast('Error: No se ha cargado la referencia. Reintenta.');
@@ -250,23 +245,28 @@ function resetCreationForm() {
     componentsList.innerHTML = `
         <div class="component-field">
             <span class="component-label">Placa Base</span>
-            <input type="text" name="serial" class="serial-input" placeholder="S/N o P/N" required>
+            <input type="text" class="comp-pn" placeholder="P/N">
+            <input type="text" class="comp-sn" placeholder="S/N">
         </div>
         <div class="component-field">
             <span class="component-label">CPU</span>
-            <input type="text" name="serial" class="serial-input" placeholder="S/N o P/N" required>
+            <input type="text" class="comp-pn" placeholder="P/N">
+            <input type="text" class="comp-sn" placeholder="S/N">
         </div>
         <div class="component-field">
             <span class="component-label">RAM</span>
-            <input type="text" name="serial" class="serial-input" placeholder="S/N o P/N" required>
+            <input type="text" class="comp-pn" placeholder="P/N">
+            <input type="text" class="comp-sn" placeholder="S/N">
         </div>
         <div class="component-field">
             <span class="component-label">Caja</span>
-            <input type="text" name="serial" class="serial-input" placeholder="S/N o P/N" required>
+            <input type="text" class="comp-pn" placeholder="P/N">
+            <input type="text" class="comp-sn" placeholder="S/N">
         </div>
         <div class="component-field">
-            <span class="component-label">PCI-e (Opcional)</span>
-            <input type="text" name="serial" class="serial-input" placeholder="S/N o P/N">
+            <span class="component-label">PCI-e (Opc.)</span>
+            <input type="text" class="comp-pn" placeholder="P/N">
+            <input type="text" class="comp-sn" placeholder="S/N">
         </div>
     `;
 }
@@ -623,17 +623,18 @@ function openEditModal(id, type) {
 
                 const filledComponents = {};
                 (record.components || []).forEach(comp => {
-                    filledComponents[comp.label] = comp.value;
+                    filledComponents[comp.label] = { pn: comp.pn || '', sn: comp.sn || '' };
                 });
 
                 editComponentsList.innerHTML = '';
                 defaultComponents.forEach(label => {
                     const div = document.createElement('div');
                     div.className = 'component-field';
-                    const value = filledComponents[label] || '';
+                    const data = filledComponents[label] || { pn: '', sn: '' };
                     div.innerHTML = `
                         <span class="component-label">${label}</span>
-                        <input type="text" value="${value}" placeholder="S/N o P/N" ${label === 'PCI-e (Opcional)' ? '' : 'required'}>
+                        <input type="text" class="comp-pn" value="${data.pn}" placeholder="P/N">
+                        <input type="text" class="comp-sn" value="${data.sn}" placeholder="S/N">
                     `;
                     editComponentsList.appendChild(div);
                 });
@@ -645,7 +646,8 @@ function openEditModal(id, type) {
                         div.className = 'component-field';
                         div.innerHTML = `
                             <span class="component-label">${comp.label}</span>
-                            <input type="text" value="${comp.value}" placeholder="S/N o P/N" required>
+                            <input type="text" class="comp-pn" value="${comp.pn || ''}" placeholder="P/N">
+                            <input type="text" class="comp-sn" value="${comp.sn || ''}" placeholder="S/N">
                         `;
                         editComponentsList.appendChild(div);
                     }
@@ -677,9 +679,10 @@ editForm.addEventListener('submit', (e) => {
     } else {
         const componentFields = Array.from(editComponentsList.querySelectorAll('.component-field'));
         data.components = componentFields.map(field => ({
-            label: field.querySelector('.component-label').textContent,
-            value: field.querySelector('input').value
-        })).filter(c => c.value.trim() !== '');
+            label: field.querySelector('.component-label')?.textContent || field.querySelector('.component-name')?.value || 'Extra',
+            pn: field.querySelector('.comp-pn').value.trim(),
+            sn: field.querySelector('.comp-sn').value.trim()
+        })).filter(c => c.pn !== '' || c.sn !== '');
     }
 
     updateRecord(data)
@@ -701,8 +704,9 @@ document.getElementById('edit-add-component').addEventListener('click', () => {
     const div = document.createElement('div');
     div.className = 'component-field';
     div.innerHTML = `
-        <input type="text" class="component-name" placeholder="Nombre componente" required>
-        <input type="text" class="component-value" placeholder="S/N o P/N" required>
+        <input type="text" class="component-name" placeholder="Nombre" required>
+        <input type="text" class="comp-pn" placeholder="P/N">
+        <input type="text" class="comp-sn" placeholder="S/N">
         <button type="button" class="remove-component">✖</button>
     `;
     editComponentsList.appendChild(div);

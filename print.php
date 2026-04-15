@@ -272,10 +272,18 @@ function processLabel($id, $record, $mode, $targetPrinter, $copies = 1)
                         </div>
                     <?php else: ?>
                         <table class="comp-table">
+                            <thead>
+                                <tr>
+                                    <th class="comp-header">COMPONENTE</th>
+                                    <th class="comp-header">P/N</th>
+                                    <th class="comp-header">S/N</th>
+                                </tr>
+                            </thead>
                             <?php foreach ($record['components'] as $comp): ?>
                                 <tr>
-                                    <td class="comp-header"><?php echo htmlspecialchars($comp['component_label']); ?></td>
-                                    <td><?php echo htmlspecialchars($comp['component_value']); ?></td>
+                                    <td><?php echo htmlspecialchars($comp['label'] ?? $comp['component_label'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($comp['pn'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($comp['sn'] ?? ''); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </table>

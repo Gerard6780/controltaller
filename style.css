@@ -439,23 +439,26 @@ textarea:focus {
 .component-field {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.8rem;
     background: rgba(255, 255, 255, 0.02);
-    padding: 0.8rem 1rem;
-    border-radius: 1.5rem;
+    padding: 0.6rem 1rem;
+    border-radius: 1.2rem;
     border: 1px solid var(--card-border);
     min-width: 0;
 }
 
 .component-field .component-label {
-    min-width: 100px;
+    min-width: 90px;
+    font-size: 0.9rem;
     font-weight: 600;
 }
 
 .component-field input {
-    width: auto;
+    width: 0; /* Let flex-grow handle it */
     min-width: 0;
-    flex: 1 1 auto;
+    flex: 1 1 40%;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.95rem;
 }
 
 .component-field .remove-component {
