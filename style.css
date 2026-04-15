@@ -421,6 +421,11 @@ textarea:focus {
     outline: none;
 }
 
+select option {
+    background-color: #161b22;
+    color: white;
+}
+
 /* Component Field as Rows */
 #components-list {
     display: grid;
