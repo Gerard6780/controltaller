@@ -48,9 +48,7 @@ try {
         $stmt->execute([$id]);
         $record = $stmt->fetch();
         if ($record) {
-            $stmtC = $pdo->prepare("SELECT component_label, component_value FROM creation_components WHERE creation_id = ?");
-            $stmtC->execute([$id]);
-            $record['components'] = $stmtC->fetchAll();
+            $record['components'] = json_decode($record['components'] ?? '[]', true);
         }
     }
 

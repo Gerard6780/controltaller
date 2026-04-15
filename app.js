@@ -194,7 +194,7 @@ forms.repair.addEventListener('submit', (e) => {
 forms.create.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    const componentFields = Array.from(document.querySelectorAll('.component-field'));
+    const componentFields = Array.from(forms.create.querySelectorAll('.component-field'));
     const components = componentFields.map(field => {
         const nameInput = field.querySelector('.component-name');
         const valueInput = field.querySelector('.component-value');

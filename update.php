@@ -38,22 +38,9 @@ try {
         $stmt->execute([$data['client'], $data['technician'], $data['problem'], $data['accessories'] ?? '', $data['delivered'] ?? 0, $id]);
     }
     elseif ($type === 'creation') {
-        $stmt = $pdo->prepare("UPDATE creations SET client = ?, technician = ?, delivered = ? WHERE id = ?");
-        $stmt->execute([$data['client'], $data['technician'], $data['delivered'] ?? 0, $id]);
-
-        // Eliminar componentes existentes y agregar nuevos
-        $pdo->prepare("DELETE FROM creation_components WHERE creation_id = ?")->execute([$id]);
-
-        if (!empty($data['components']) && is_array($data['components'])) {
-            $stmtComp = $pdo->prepare("INSERT INTO creation_components (creation_id, component_label, component_value) VALUES (?,?,?)");
-            foreach ($data['components'] as $comp) {
-                $label = trim($comp['label'] ?? '');
-                $value = trim($comp['value'] ?? '');
-                if ($label !== '' && $value !== '') {
-                    $stmtComp->execute([$id, $label, $value]);
-                }
-            }
-        }
+        $componentsJson = json_encode($data['components'] ?? []);
+        $stmt = $pdo->prepare("UPDATE creations SET client = ?, technician = ?, delivered = ?, components = ? WHERE id = ?");
+        $stmt->execute([$data['client'], $data['technician'], $data['delivered'] ?? 0, $componentsJson, $id]);
     }
     else {
         throw new Exception('Tipo de registro desconocido');

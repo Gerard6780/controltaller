@@ -37,20 +37,9 @@ try {
         $stmt->execute([$data['id'], $data['client'], $data['technician'], $data['problem'], $data['accessories'] ?? '', $data['date']]);
     }
     elseif ($type === 'creation') {
-        $stmt = $pdo->prepare("INSERT INTO creations (id, client, technician, date) VALUES (?,?,?,?)");
-        $stmt->execute([$data['id'], $data['client'], $data['technician'], $data['date']]);
-
-        if (!empty($data['components']) && is_array($data['components'])) {
-            $stmtComp = $pdo->prepare("INSERT INTO creation_components (creation_id, component_label, component_value) VALUES (?,?,?)");
-            foreach ($data['components'] as $comp) {
-                // Validación básica
-                $label = trim($comp['label'] ?? '');
-                $value = trim($comp['value'] ?? '');
-                if ($label !== '' && $value !== '') {
-                    $stmtComp->execute([$data['id'], $label, $value]);
-                }
-            }
-        }
+        $componentsJson = json_encode($data['components'] ?? []);
+        $stmt = $pdo->prepare("INSERT INTO creations (id, client, technician, date, components) VALUES (?,?,?,?,?)");
+        $stmt->execute([$data['id'], $data['client'], $data['technician'], $data['date'], $componentsJson]);
     }
     else {
         throw new Exception('Tipo de registro desconocido');

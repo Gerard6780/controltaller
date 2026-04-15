@@ -37,19 +37,18 @@ try {
     // Creaciones
     if ($typeFilter === '' || $typeFilter === 'creation') {
         if ($refFilter) {
-            $stmtCreation = $pdo->prepare("SELECT id, 'creation' AS type, client, technician, delivered, date FROM creations WHERE id LIKE ? ORDER BY date DESC");
+            $stmtCreation = $pdo->prepare("SELECT id, 'creation' AS type, client, technician, delivered, date, components FROM creations WHERE id LIKE ? ORDER BY date DESC");
             $stmtCreation->execute([$refLike]);
         } else {
-            $stmtCreation = $pdo->query("SELECT id, 'creation' AS type, client, technician, delivered, date FROM creations ORDER BY date DESC LIMIT 100");
+            $stmtCreation = $pdo->query("SELECT id, 'creation' AS type, client, technician, delivered, date, components FROM creations ORDER BY date DESC LIMIT 100");
         }
         $creations = $stmtCreation->fetchAll();
     }
 
     // Recoger componentes para cada creación
+    // Procesar componentes de cada creación (ahora desde campo JSON)
     foreach ($creations as &$creation) {
-        $stmtC = $pdo->prepare("SELECT component_label AS label, component_value AS value FROM creation_components WHERE creation_id = ?");
-        $stmtC->execute([$creation['id']]);
-        $creation['components'] = $stmtC->fetchAll();
+        $creation['components'] = json_decode($creation['components'] ?? '[]', true);
         $creation['problem'] = null;
     }
 
