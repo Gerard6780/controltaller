@@ -1,23 +1,31 @@
 <?php
-/**
- * Generación de Etiquetas e Informes de Impresión
- * Soporta impresoras Brother QL-570 (etiqueta pequeña) y Zebra (etiqueta grande A6).
- */
+$host = 'localhost';
+$db = 'tpv_db';
+$user = 'tecnicos';
+$pass = 'Nfa8uku4';
+$charset = 'utf8mb4';
 
-// Requerimos la conexión centralizada
-require_once 'db.php';
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+];
 
-// Obtener ID de la referencia
-$id = $_GET['id'] ?? null;
-if (!$id) {
-    die("Error: No se ha especificado una referencia (ID).");
+try {
+    $pdo = new PDO($dsn, $user, $pass, $options);
+}
+catch (Exception $e) {
+    die("Error de conexión: " . $e->getMessage());
 }
 
-// Determinar el tipo (R- o C-)
+$id = $_GET['id'] ?? null;
+if (!$id) {
+    die("Error: No se ha especificado ID.");
+}
+
 $type = (strpos(strtoupper($id), 'R-') === 0) ? 'repair' : 'creation';
 $record = null;
 
-// Recuperar los datos del registro desde la base de datos
 try {
     if ($type === 'repair') {
         $stmt = $pdo->prepare("SELECT * FROM repairs WHERE id = ?");
@@ -28,12 +36,11 @@ try {
         $stmt->execute([$id]);
         $record = $stmt->fetch();
         if ($record) {
-            // Decodificamos el JSON de componentes para las creaciones
             $record['components'] = json_decode($record['components'] ?? '[]', true);
         }
     }
 } catch (Exception $e) {
-    die("Error al recuperar los datos: " . $e->getMessage());
+    die("Error: " . $e->getMessage());
 }
 
 if (!$record) {
@@ -46,10 +53,9 @@ if (!$record) {
     <meta charset="UTF-8">
     <title>Imprimir - <?php echo $id; ?></title>
     <style>
-        /* Estilos base para la impresión */
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
         
-        /* Contenedor de la etiqueta Brother QL-570 (formato pequeño 29x90mm aprox) */
+        /* Brother QL-570 */
         .label-brother {
             width: 290px;
             height: 90px;
@@ -62,7 +68,7 @@ if (!$record) {
         .label-brother h1 { font-size: 24px; margin: 0; border-bottom: 2px solid #000; }
         .label-brother p { font-size: 14px; margin: 2px 0; font-weight: bold; }
 
-        /* Contenedor de la etiqueta Zebra (formato A6 aprox 150x100mm) */
+        /* Zebra */
         .label-zebra {
             width: 150mm;
             height: 100mm;
@@ -93,17 +99,17 @@ if (!$record) {
         <button onclick="window.print()" style="padding: 10px 20px; font-size: 18px; cursor: pointer; background: #cc0000; color: #fff; border: none; border-radius: 5px;">
             🖨️ IMPRIMIR ETIQUETAS
         </button>
-        <p style="margin-top:10px; color:#666;">Se generarán dos formatos automáticamente (Brother y Zebra).</p>
+        <p style="margin-top:10px; color:#666;">Se generarán dos formatos (Brother y Zebra).</p>
     </div>
 
-    <!-- FORMATO 1: BROTHER QL-570 (Identificación rápida) -->
+    <!-- BROTHER -->
     <div class="label-brother">
         <h1><?php echo htmlspecialchars($id); ?></h1>
         <p>CLIENTE: <?php echo htmlspecialchars($record['client']); ?></p>
         <p>FECHA: <?php echo date('d/m/Y', strtotime($record['date'])); ?></p>
     </div>
 
-    <!-- FORMATO 2: ZEBRA (Informe técnico completo) -->
+    <!-- ZEBRA -->
     <div class="label-zebra">
         <div class="zebra-header">
             <div>
@@ -121,14 +127,12 @@ if (!$record) {
             <p><strong>TÉCNICO:</strong> <?php echo htmlspecialchars($record['technician']); ?></p>
             
             <?php if ($type === 'repair'): ?>
-                <!-- Contenido específico para Reparaciones -->
                 <p><strong>ACCESORIOS:</strong> <?php echo htmlspecialchars($record['accessories'] ?: 'Ninguno'); ?></p>
                 <div style="margin-top: 15px; border: 1px solid #000; padding: 10px;">
                     <strong style="display: block; text-decoration: underline; margin-bottom: 5px;">PROBLEMA REPORTADO:</strong>
                     <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
                 </div>
             <?php else: ?>
-                <!-- Contenido específico para Creaciones (Ensamblajes) -->
                 <p><strong>LISTA DE COMPONENTES INSTALADOS:</strong></p>
                 <table class="comp-table">
                     <thead>
@@ -152,13 +156,8 @@ if (!$record) {
         </div>
 
         <div class="zebra-footer">
-            Generado automáticamente por el Sistema de Gestión de Taller - Gerard Anta
+            Soporte técnico: Gerard Anta
         </div>
     </div>
-
-    <script>
-        // Si el usuario lo prefiere, podemos disparar la impresión al cargar
-        // window.onload = () => window.print();
-    </script>
 </body>
 </html>
