@@ -1,26 +1,13 @@
 <?php
+/**
+ * Eliminar Registro Permanentemente
+ */
 header('Content-Type: application/json');
 
-$host = 'localhost';
-$db = 'tpv_db';
-$user = 'tecnicos';
-$pass = 'Nfa8uku4';
-$charset = 'utf8mb4';
+// Requerimos la conexión centralizada
+require_once 'db.php';
 
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-$options = [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-];
-
-try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
-}
-catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-    exit;
-}
-
+// Obtener datos del cuerpo de la petición
 $data = json_decode(file_get_contents('php://input'), true);
 if (!$data || !isset($data['type']) || !isset($data['id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Datos inválidos']);
@@ -34,12 +21,15 @@ try {
     $pdo->beginTransaction();
 
     if ($type === 'repair') {
+        // Eliminar de la tabla de reparaciones
         $stmt = $pdo->prepare("DELETE FROM repairs WHERE id = ?");
         $stmt->execute([$id]);
     }
     elseif ($type === 'creation') {
-        // Eliminar componentes primero (FK)
-        $pdo->prepare("DELETE FROM creation_components WHERE creation_id = ?")->execute([$id]);
+        /**
+         * NOTA: Ya no necesitamos borrar de 'creation_components' porque
+         * ahora guardamos los componentes en un campo JSON dentro de 'creations'.
+         */
         $stmt = $pdo->prepare("DELETE FROM creations WHERE id = ?");
         $stmt->execute([$id]);
     }
@@ -49,9 +39,11 @@ try {
 
     $pdo->commit();
     echo json_encode(['status' => 'success']);
-}
-catch (Exception $e) {
-    $pdo->rollBack();
+
+} catch (Exception $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>

@@ -1,26 +1,13 @@
 <?php
+/**
+ * Cambiar el Estado de Entrega (Pendiente/Entregado)
+ */
 header('Content-Type: application/json');
 
-$host = 'localhost';
-$db = 'tpv_db';
-$user = 'tecnicos';
-$pass = 'Nfa8uku4';
-$charset = 'utf8mb4';
+// Requerimos la conexión centralizada
+require_once 'db.php';
 
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-$options = [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-];
-
-try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
-}
-catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-    exit;
-}
-
+// Obtener datos del JSON enviado
 $data = json_decode(file_get_contents('php://input'), true);
 if (!$data || !isset($data['type']) || !isset($data['id']) || !isset($data['delivered'])) {
     echo json_encode(['status' => 'error', 'message' => 'Datos inválidos']);
@@ -32,6 +19,7 @@ $id = $data['id'];
 $delivered = (int)$data['delivered'];
 
 try {
+    // Determinamos la tabla según el tipo de registro
     if ($type === 'repair') {
         $stmt = $pdo->prepare("UPDATE repairs SET delivered = ? WHERE id = ?");
     } else if ($type === 'creation') {

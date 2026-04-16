@@ -1,44 +1,24 @@
 <?php
 /**
- * MODUL 4 - SISTEMA DE IMPRESIÓN DUAL PROFESIONAL (v2.32)
- * Unificación total de flujos automáticos y manuales.
+ * Generación de Etiquetas e Informes de Impresión
+ * Soporta impresoras Brother QL-570 (etiqueta pequeña) y Zebra (etiqueta grande A6).
  */
 
-header('Content-Type: application/json');
+// Requerimos la conexión centralizada
+require_once 'db.php';
 
-// --- 1. CONFIGURACIÓN INICIAL ---
-$host = 'localhost';
-$db = 'tpv_db';
-$user = 'tecnicos';
-$pass = 'Nfa8uku4';
-$charset = 'utf8mb4';
-
-// Impresoras Configuradas en CUPS
-$PRINTER_ZEBRA = 'GK420d';
-$PRINTER_BROTHER = 'QL-570';
-
-// --- 2. CAPTURA DE PARÁMETROS ---
-$id = trim($_GET['id'] ?? '');
-$manualPrinter = isset($_GET['printer']) ? strtoupper($_GET['printer']) : null;
-$manualMode = $_GET['mode'] ?? 'full';
-$manualCopies = $_GET['copies'] ?? 1;
-
+// Obtener ID de la referencia
+$id = $_GET['id'] ?? null;
 if (!$id) {
-    echo json_encode(['status' => 'error', 'message' => 'No se especificó la ID.']);
-    exit;
+    die("Error: No se ha especificado una referencia (ID).");
 }
 
-// --- 3. CONEXIÓN Y DATOS ---
+// Determinar el tipo (R- o C-)
+$type = (strpos(strtoupper($id), 'R-') === 0) ? 'repair' : 'creation';
+$record = null;
+
+// Recuperar los datos del registro desde la base de datos
 try {
-    $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-    $pdo = new PDO($dsn, $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
-
-    $type = (strpos($id, 'R-') === 0) ? 'repair' : 'creation';
-    $record = null;
-
     if ($type === 'repair') {
         $stmt = $pdo->prepare("SELECT * FROM repairs WHERE id = ?");
         $stmt->execute([$id]);
@@ -48,296 +28,137 @@ try {
         $stmt->execute([$id]);
         $record = $stmt->fetch();
         if ($record) {
+            // Decodificamos el JSON de componentes para las creaciones
             $record['components'] = json_decode($record['components'] ?? '[]', true);
         }
     }
-
-    if (!$record)
-        throw new Exception("Registro no encontrado.");
-
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-    exit;
+    die("Error al recuperar los datos: " . $e->getMessage());
 }
 
-$logoPath = __DIR__ . '/images/m4bannerblack.png';
-$logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : "";
+if (!$record) {
+    die("Error: Registro no encontrado.");
+}
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Imprimir - <?php echo $id; ?></title>
+    <style>
+        /* Estilos base para la impresión */
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
+        
+        /* Contenedor de la etiqueta Brother QL-570 (formato pequeño 29x90mm aprox) */
+        .label-brother {
+            width: 290px;
+            height: 90px;
+            padding: 5px;
+            border: 1px dashed #ccc;
+            margin: 10px;
+            page-break-after: always;
+            overflow: hidden;
+        }
+        .label-brother h1 { font-size: 24px; margin: 0; border-bottom: 2px solid #000; }
+        .label-brother p { font-size: 14px; margin: 2px 0; font-weight: bold; }
 
-// --- 5. FUNCIÓN CORE: GENERAR Y ENVIAR ---
-function processLabel($id, $record, $mode, $targetPrinter, $copies = 1)
-{
-    global $logoBase64, $type;
+        /* Contenedor de la etiqueta Zebra (formato A6 aprox 150x100mm) */
+        .label-zebra {
+            width: 150mm;
+            height: 100mm;
+            padding: 10mm;
+            border: 2px solid #000;
+            margin: 10px;
+            page-break-after: always;
+            position: relative;
+        }
+        .zebra-header { display: flex; justify-content: space-between; border-bottom: 4px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
+        .zebra-header h1 { font-size: 42px; margin: 0; }
+        .zebra-body { font-size: 18px; line-height: 1.4; }
+        .zebra-footer { position: absolute; bottom: 10mm; right: 10mm; font-size: 14px; color: #666; }
 
-    if (strtoupper($targetPrinter) === 'GK420D') {
-        $w = '150mm';
-        $h = '100mm';
-        $pageSize = 'Custom.100x150mm';
-        $dpi = 203;
-        $lpOptions = "-o scaling=100 -o orientation-requested=4 -n $copies -o PageSize=$pageSize";
-    } else {
-        $w = '62mm';
-        $h = '29mm';
-        $pageSize = 'Custom.62x29mm';
-        $dpi = 203;
-        $lpOptions = "-o scaling=100 -o orientation-requested=3 -n $copies -o PageSize=$pageSize";
-    }
+        .comp-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .comp-table th, .comp-table td { border: 1px solid #000; padding: 5px; text-align: left; font-size: 14px; }
+        .comp-header { background-color: #eee; font-weight: bold; }
 
-    ob_start();
-    ?>
-    <html>
+        @media print {
+            .no-print { display: none; }
+            .label-brother, .label-zebra { border: none; margin: 0; }
+        }
+    </style>
+</head>
+<body>
 
-    <head>
-        <meta charset='UTF-8'>
-        <script src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'></script>
-        <style>
-            html,
-            body {
-                margin: 0;
-                padding: 0;
-                background: #fff;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
-            }
+    <div class="no-print" style="background:#f4f4f4; padding: 20px; text-align: center; border-bottom: 1px solid #ccc;">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 18px; cursor: pointer; background: #cc0000; color: #fff; border: none; border-radius: 5px;">
+            🖨️ IMPRIMIR ETIQUETAS
+        </button>
+        <p style="margin-top:10px; color:#666;">Se generarán dos formatos automáticamente (Brother y Zebra).</p>
+    </div>
 
-            body {
-                font-family: 'Arial Black', Gadget, sans-serif;
-                color: #000;
-            }
+    <!-- FORMATO 1: BROTHER QL-570 (Identificación rápida) -->
+    <div class="label-brother">
+        <h1><?php echo htmlspecialchars($id); ?></h1>
+        <p>CLIENTE: <?php echo htmlspecialchars($record['client']); ?></p>
+        <p>FECHA: <?php echo date('d/m/Y', strtotime($record['date'])); ?></p>
+    </div>
 
-            .ticket {
-                width: 100%;
-                height: 100%;
-                padding: 2mm;
-                box-sizing: border-box;
-                display: flex;
-                flex-direction: column;
-            }
+    <!-- FORMATO 2: ZEBRA (Informe técnico completo) -->
+    <div class="label-zebra">
+        <div class="zebra-header">
+            <div>
+                <small style="text-transform: uppercase; font-weight: bold; color: #cc0000;">MODUL4 - Control Taller</small>
+                <h1><?php echo htmlspecialchars($id); ?></h1>
+            </div>
+            <div style="text-align: right;">
+                <p style="margin:0; font-weight: bold;"><?php echo date('d/m/Y H:i', strtotime($record['date'])); ?></p>
+                <p style="margin:0;"><?php echo strtoupper($type === 'repair' ? 'Reparación' : 'Creación'); ?></p>
+            </div>
+        </div>
 
-            .mode-ref .ticket {
-                justify-content: center;
-                align-items: center;
-                text-align: center;
-            }
-
-            .is-zebra.mode-ref .ref-id {
-                font-size: 85px;
-                font-weight: 900;
-                line-height: 1;
-                margin-bottom: 10px;
-            }
-
-            .is-zebra.mode-ref .client-name {
-                font-size: 34px;
-                font-weight: 800;
-                border-top: 4px solid #000;
-                width: 85%;
-                margin-top: 15px;
-            }
-
-            .is-brother.mode-ref .ref-id {
-                font-size: 40px;
-                font-weight: 950;
-                letter-spacing: -1.5px;
-                margin-bottom: -4px;
-                width: 100%;
-                border-bottom: 2px solid #000;
-            }
-
-            .is-brother.mode-ref .client-name {
-                font-size: 15px;
-                font-weight: 800;
-                margin-top: 2px;
-            }
-
-            .is-brother.mode-ref .barcode-svg {
-                margin: 2px 0;
-            }
-
-            .header-banner {
-                width: 100%;
-                height: 18mm;
-                text-align: center;
-            }
-
-            .header-info {
-                display: flex;
-                justify-content: space-between;
-                border-bottom: 5px solid #000;
-                padding-bottom: 5px;
-            }
-
-            .title-full {
-                font-size: 30px;
-                font-weight: 900;
-            }
-
-            .body-full {
-                display: flex;
-                gap: 40mm;
-                margin-top: 5px;
-                align-items: center;
-            }
-
-            .id-full {
-                font-size: 50px;
-                font-weight: 950;
-            }
-
-            .info-text {
-                flex: 1;
-                font-size: 24px;
-                margin-left: 10mm;
-            }
-
-            .inf-box {
-                margin-top: 8px;
-                border: 4px solid #000;
-                padding: 12px;
-                flex-grow: 1;
-                border-radius: 5px;
-                position: relative;
-            }
-
-            .inf-tag {
-                position: absolute;
-                top: -14px;
-                left: 15px;
-                background: #fff;
-                padding: 0 10px;
-                font-size: 16px;
-                font-weight: 900;
-                border: 2px solid #000;
-            }
-
-            .comp-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 5px;
-            }
-
-            .comp-table td {
-                border: 1px solid #000;
-                padding: 5px;
-                font-size: 15px;
-                font-weight: bold;
-            }
-
-            .comp-header {
-                background: #eee;
-                font-weight: 900;
-                width: 35%;
-            }
-
-            .footer-strip {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-end;
-                margin-top: 5px;
-            }
-        </style>
-    </head>
-
-    <body
-        class="mode-<?php echo $mode; ?> <?php echo ($targetPrinter === 'GK420D' || $targetPrinter === 'GK420d' ? 'is-zebra' : 'is-brother'); ?>">
-        <div class="ticket">
-            <?php if ($mode === 'ref'): ?>
-                <div class="ref-id"><?php echo $id; ?></div>
-                <svg id="barcode"></svg>
-                <div class="client-name"><?php echo htmlspecialchars($record['client']); ?></div>
+        <div class="zebra-body">
+            <p><strong>CLIENTE:</strong> <?php echo htmlspecialchars($record['client']); ?></p>
+            <p><strong>TÉCNICO:</strong> <?php echo htmlspecialchars($record['technician']); ?></p>
+            
+            <?php if ($type === 'repair'): ?>
+                <!-- Contenido específico para Reparaciones -->
+                <p><strong>ACCESORIOS:</strong> <?php echo htmlspecialchars($record['accessories'] ?: 'Ninguno'); ?></p>
+                <div style="margin-top: 15px; border: 1px solid #000; padding: 10px;">
+                    <strong style="display: block; text-decoration: underline; margin-bottom: 5px;">PROBLEMA REPORTADO:</strong>
+                    <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
+                </div>
             <?php else: ?>
-                <div class="header-banner">
-                    <?php if ($logoBase64): ?><img src="data:image/png;base64,<?php echo $logoBase64; ?>"
-                            style="height:100%; width:auto;"><?php endif; ?>
-                </div>
-                <div class="header-info">
-                    <div class="title-full"><?php echo ($type === 'repair' ? 'REPARACION EQUIPO' : 'MONTAJE EQUIPO'); ?></div>
-                    <div style="font-size: 22px; font-weight: bold;"><?php echo date("d/m/Y"); ?></div>
-                </div>
-                <div class="body-full">
-                    <div style="text-align:center;">
-                        <svg id="barcode" style="width:220px; height:60px;"></svg>
-                        <div class="id-full"><?php echo $id; ?></div>
-                    </div>
-                    <div class="info-text">
-                        <b>CLIENTE:</b> <?php echo htmlspecialchars($record['client']); ?><br>
-                        <b>TÉCNICO:</b> <?php echo htmlspecialchars($record['technician']); ?>
-                    </div>
-                </div>
-                <div class="inf-box">
-                    <div class="inf-tag"><?php echo ($type === 'repair' ? 'AVERÍA DECLARADA' : 'COMPONENTES Y/O S/N'); ?></div>
-                    <?php if ($type === 'repair'): ?>
-                        <div style="font-size:20px; font-weight:900; line-height: 1.1;">
-                            <?php echo nl2br(htmlspecialchars($record['problem'])); ?>
-                        </div>
-                    <?php else: ?>
-                        <table class="comp-table">
-                            <thead>
-                                <tr>
-                                    <th class="comp-header">COMPONENTE</th>
-                                    <th class="comp-header">P/N</th>
-                                    <th class="comp-header">S/N</th>
-                                </tr>
-                            </thead>
-                            <?php foreach ($record['components'] as $comp): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($comp['label'] ?? $comp['component_label'] ?? ''); ?></td>
-                                    <td><?php echo htmlspecialchars($comp['pn'] ?? ''); ?></td>
-                                    <td><?php echo htmlspecialchars($comp['sn'] ?? ''); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </table>
-                    <?php endif; ?>
-                </div>
-
-                <?php if ($type === 'repair' && !empty($record['accessories'])): ?>
-                    <div class="inf-box" style="margin-top: 15px;">
-                        <div class="inf-tag">ACCESORIOS INCLUIDOS</div>
-                        <div style="font-size:18px; font-weight:800; line-height: 1.1; color: #333;">
-                            <?php echo nl2br(htmlspecialchars($record['accessories'])); ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
+                <!-- Contenido específico para Creaciones (Ensamblajes) -->
+                <p><strong>LISTA DE COMPONENTES INSTALADOS:</strong></p>
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th class="comp-header">COMPONENTE</th>
+                            <th class="comp-header">P/N</th>
+                            <th class="comp-header">S/N</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach (($record['components'] ?? []) as $comp): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($comp['label'] ?? ''); ?></td>
+                                <td><?php echo htmlspecialchars($comp['pn'] ?? '-'); ?></td>
+                                <td><?php echo htmlspecialchars($comp['sn'] ?? '-'); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             <?php endif; ?>
         </div>
-        <script>
-            JsBarcode("#barcode", "<?php echo addslashes($id); ?>", {
-                format: "CODE128",
-                displayValue: false,
-                height: <?php echo ($mode === 'ref' ? ($targetPrinter === 'GK420d' ? 120 : 45) : 60); ?>,
-                width: <?php echo ($targetPrinter === 'GK420d' ? 3 : 2); ?>,
-                margin: 0
-            });
-        </script>
-    </body>
 
-    </html>
-    <?php
-    $html = ob_get_clean();
-    $uid = uniqid();
-    $pdfFile = "/tmp/p_{$id}_{$mode}_{$uid}.pdf";
-    $htmlFile = "/tmp/p_{$id}_{$mode}_{$uid}.html";
-    file_put_contents($htmlFile, $html);
+        <div class="zebra-footer">
+            Generado automáticamente por el Sistema de Gestión de Taller - Gerard Anta
+        </div>
+    </div>
 
-    exec("wkhtmltopdf --dpi $dpi --page-width $w --page-height $h --margin-top 0 --margin-bottom 0 --margin-left 2 --margin-right 2 " . escapeshellarg($htmlFile) . " " . escapeshellarg($pdfFile));
-
-    exec("lp -d " . escapeshellarg($targetPrinter) . " $lpOptions " . escapeshellarg($pdfFile));
-
-    @unlink($htmlFile);
-    @unlink($pdfFile);
-    return true;
-}
-
-if ($manualPrinter) {
-    processLabel($id, $record, $manualMode, $manualPrinter, $manualCopies);
-} else {
-    if ($type === 'repair') {
-        processLabel($id, $record, 'ref', $PRINTER_BROTHER, 1);
-        processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
-    } else {
-        processLabel($id, $record, 'ref', $PRINTER_BROTHER, 1);
-        processLabel($id, $record, 'full', $PRINTER_ZEBRA, 1);
-    }
-}
-
-echo json_encode(['status' => 'success', 'v' => '2.37', 'printer_used' => ($manualPrinter ?? 'AUTO')]);
+    <script>
+        // Si el usuario lo prefiere, podemos disparar la impresión al cargar
+        // window.onload = () => window.print();
+    </script>
+</body>
+</html>

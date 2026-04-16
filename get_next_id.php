@@ -1,27 +1,15 @@
 <?php
+/**
+ * Calcular el Siguiente ID (Referencia) disponible
+ * Para evitar conflictos, buscamos el valor numérico más alto en lugar de confiar en el autoincremento.
+ */
 header('Content-Type: application/json');
 
-$host = 'localhost';
-$db = 'tpv_db';
-$user = 'tecnicos';
-$pass = 'Nfa8uku4';
-$charset = 'utf8mb4';
-
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-$options = [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-];
+// Requerimos la conexión centralizada
+require_once 'db.php';
 
 try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
-
-    // DEPURE: Ver cuántos registros hay en total
-    $countR = $pdo->query("SELECT COUNT(*) FROM repairs")->fetchColumn();
-    $countC = $pdo->query("SELECT COUNT(*) FROM creations")->fetchColumn();
-
-    // Obtener el siguiente ID para Reparaciones (prefijo R-)
-    // Usamos SQL para encontrar el máximo directamente
+    // --- 1. Calcular Siguiente ID para Reparaciones (R-) ---
     $stmtR = $pdo->query("SELECT id FROM repairs WHERE id LIKE 'R-%' OR id LIKE 'r-%'");
     $idsR = $stmtR->fetchAll(PDO::FETCH_COLUMN);
     $maxR = 0;
@@ -30,9 +18,10 @@ try {
         $num = (int)$cleanId;
         if ($num > $maxR) $maxR = $num;
     }
+    // Empezamos en 1000 si no hay registros
     $nextRepairId = ($maxR === 0 && empty($idsR)) ? 1000 : max(1000, $maxR + 1);
 
-    // Obtener el siguiente ID para Creaciones (prefijo C-)
+    // --- 2. Calcular Siguiente ID para Creaciones (C-) ---
     $stmtC = $pdo->query("SELECT id FROM creations WHERE id LIKE 'C-%' OR id LIKE 'c-%'");
     $idsC = $stmtC->fetchAll(PDO::FETCH_COLUMN);
     $maxC = 0;
@@ -41,20 +30,14 @@ try {
         $num = (int)$cleanId;
         if ($num > $maxC) $maxC = $num;
     }
+    // Empezamos en 5000 si no hay registros
     $nextCreateId = ($maxC === 0 && empty($idsC)) ? 5000 : max(5000, $maxC + 1);
 
+    // Devolvemos los IDs al frontend
     echo json_encode([
-        'status' => 'success',
+        'status'       => 'success',
         'nextRepairId' => (int)$nextRepairId,
-        'nextCreateId' => (int)$nextCreateId,
-        'debug' => [
-            'db' => $db,
-            'repairs_count' => $countR,
-            'creations_count' => $countC,
-            'max_repair_found' => $maxR,
-            'max_creation_found' => $maxC,
-            'sample_repair_ids' => array_slice($idsR, 0, 5)
-        ]
+        'nextCreateId' => (int)$nextCreateId
     ]);
 
 } catch (Exception $e) {

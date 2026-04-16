@@ -1,15 +1,19 @@
 /**
- * TPV Logic - Vanilla JS + MySQL (Actualizado con Historial)
+ * Control Taller - Lógica Frontend (app.js)
+ * Sistema de gestión de Reparaciones y Creaciones.
+ * Refactorizado para mayor limpieza y con comentarios en castellano.
  */
 
+// --- ESTADO GLOBAL ---
 const STATE = {
     currentView: 'home',
     nextRepairId: null,
     nextCreateId: null,
+    // Lista de técnicos disponibles en el taller
     technicians: ['Alex Linares', 'Dani Honrado', 'Stephane Geronimi', 'Gerard Anta', 'Carlos Muñoz', 'Xavier Lamarca']
 };
 
-// --- DOM ELEMENTS ---
+// --- ELEMENTOS DEL DOM ---
 const screens = {
     home: document.getElementById('home-screen'),
     repair: document.getElementById('repair-screen'),
@@ -20,7 +24,7 @@ const screens = {
 const btns = {
     toRepair: document.getElementById('btn-repair'),
     toCreate: document.getElementById('btn-create'),
-    toHistory: document.getElementById('btn-history'), // nuevo
+    toHistory: document.getElementById('btn-history'),
     back: document.querySelectorAll('.btn-back'),
     addComponent: document.getElementById('add-component'),
     search: document.getElementById('btn-search')
@@ -41,10 +45,12 @@ const toast = document.getElementById('toast');
 const historyTableBody = document.querySelector('#history-table tbody');
 const searchRefInput = document.getElementById('search-ref');
 
-// --- INITIALIZATION ---
+// --- INICIALIZACIÓN ---
 function init() {
+    // Poblar los selectores de técnicos en los formularios
     const techSelects = [document.getElementById('rep-tech'), document.getElementById('cre-tech')];
     techSelects.forEach(select => {
+        if (!select) return;
         STATE.technicians.forEach(tech => {
             const opt = document.createElement('option');
             opt.value = tech;
@@ -52,21 +58,29 @@ function init() {
             select.appendChild(opt);
         });
     });
+    
+    // Iniciar reloj y actualizar cada minuto
     updateDateTime();
     setInterval(updateDateTime, 60000);
 }
 init();
 
+/**
+ * Actualiza la fecha y hora en la cabecera
+ */
 function updateDateTime() {
     const dateEl = document.getElementById('current-date');
     if (!dateEl) return;
-
     const now = new Date();
     const options = { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' };
     dateEl.textContent = now.toLocaleDateString('es-ES', options).replace(',', '');
 }
 
-// --- VIEW NAVIGATION ---
+// --- NAVEGACIÓN Y VISTAS ---
+
+/**
+ * Cambia la vista activa y dispara la carga de datos necesaria (IDs o Historial)
+ */
 function showView(viewName) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[viewName].classList.add('active');
@@ -74,95 +88,58 @@ function showView(viewName) {
 
     if (viewName === 'repair') {
         idDisplays.repair.textContent = `REF: Cargando...`;
-        const submitBtn = forms.repair.querySelector('.submit-btn');
-        if (submitBtn) submitBtn.disabled = true;
+        disableSubmit(forms.repair, true);
         fetchNextIds('repair');
     } else if (viewName === 'create') {
         idDisplays.create.textContent = `REF: Cargando...`;
-        const submitBtn = forms.create.querySelector('.submit-btn');
-        if (submitBtn) submitBtn.disabled = true;
+        disableSubmit(forms.create, true);
         fetchNextIds('create');
     } else if (viewName === 'history') {
-        const ref = searchRefInput.value.trim();
-        const type = document.getElementById('history-type-filter').value;
-        const client = document.getElementById('history-client-filter').value.trim();
-        const tech = document.getElementById('history-tech-filter').value.trim();
-        const problem = document.getElementById('history-problem-filter').value.trim();
-        const delivered = document.getElementById('history-delivered-filter').value;
-        const sort = 'date_desc';
-        loadHistory(ref, type, client, tech, problem, sort, delivered);
+        triggerLiveSearch();
     }
 }
 
+/**
+ * Bloquea/Desbloquea el botón de envío de un formulario
+ */
+function disableSubmit(form, disabled) {
+    const btn = form.querySelector('.submit-btn');
+    if (btn) btn.disabled = disabled;
+}
+
+/**
+ * Obtiene del servidor el siguiente número de referencia disponible
+ */
 async function fetchNextIds(type = 'both') {
     try {
         const res = await fetch('get_next_id.php');
         const data = await res.json();
-        console.log('DEBUG [NextID]:', data); // Para depuración en remoto
+        
         if (data.status === 'success') {
             STATE.nextRepairId = data.nextRepairId;
             STATE.nextCreateId = data.nextCreateId;
             
             if (type === 'repair' || type === 'both') {
                 idDisplays.repair.textContent = `REF: R-${STATE.nextRepairId}`;
-                const submitBtn = forms.repair.querySelector('.submit-btn');
-                if (submitBtn) submitBtn.disabled = false;
+                disableSubmit(forms.repair, false);
             }
             if (type === 'create' || type === 'both') {
                 idDisplays.create.textContent = `REF: C-${STATE.nextCreateId}`;
-                const submitBtn = forms.create.querySelector('.submit-btn');
-                if (submitBtn) submitBtn.disabled = false;
+                disableSubmit(forms.create, false);
             }
         }
     } catch (err) {
-        console.error('Error al obtener IDs del servidor:', err);
-        showToast('Error al sincronizar IDs con el servidor');
+        console.error('Error al sincronizar IDs:', err);
+        showToast('Error al conectar con el servidor para obtener IDs');
     }
 }
 
-// --- EVENT LISTENERS ---
-btns.toRepair.addEventListener('click', () => showView('repair'));
-btns.toCreate.addEventListener('click', () => showView('create'));
-btns.toHistory.addEventListener('click', () => showView('history'));
+// --- GESTIÓN DE FORMULARIOS ---
 
-document.querySelectorAll('.massive-btn').forEach(btn => {
-    btn.addEventListener('mousemove', e => {
-        const rect = btn.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        btn.style.setProperty('--x', `${x}px`);
-        btn.style.setProperty('--y', `${y}px`);
-    });
-});
-
-btns.back.forEach(btn => {
-    btn.addEventListener('click', () => showView('home'));
-});
-
-btns.addComponent.addEventListener('click', () => {
-    const div = document.createElement('div');
-    div.className = 'component-field';
-    div.innerHTML = `
-        <input type="text" class="component-name" placeholder="Nombre" required>
-        <input type="text" class="comp-pn" placeholder="P/N">
-        <input type="text" class="comp-sn" placeholder="S/N">
-        <button type="button" class="remove-component">✖</button>
-    `;
-    componentsList.appendChild(div);
-
-    div.querySelector('.remove-component').addEventListener('click', () => {
-        div.remove();
-    });
-});
-
-// --- FORM HANDLING ---
+// Reparación (Submit)
 forms.repair.addEventListener('submit', (e) => {
     e.preventDefault();
-
-    if (!STATE.nextRepairId) {
-        showToast('Error: No se ha cargado la referencia. Reintenta.');
-        return;
-    }
+    if (!STATE.nextRepairId) return showToast('Error: ID no disponible');
 
     const data = {
         id: `R-${STATE.nextRepairId}`,
@@ -174,44 +151,29 @@ forms.repair.addEventListener('submit', (e) => {
         accessories: document.getElementById('rep-accessories').value
     };
 
-    saveRecord(data)
-        .then(res => {
-            if (res.status === 'success') {
-                printLabel(data.id); // Flujo automático v2.22
-                showToast('Reparación registrada con éxito');
-                forms.repair.reset();
-                showView('home');
-            } else {
-                console.error('Error al guardar reparación:', res.message);
-                showToast('Error al guardar reparación');
-            }
-        })
-        .catch(err => {
-            console.error('Error al guardar reparación:', err);
-            showToast('Error de conexión al guardar reparación');
-        });
+    saveRecord(data).then(res => {
+        if (res.status === 'success') {
+            openPrintWindow(data.id);
+            showToast('Reparación registrada ✅');
+            forms.repair.reset();
+            showView('home');
+        } else {
+            showToast('Error: ' + res.message);
+        }
+    });
 });
 
+// Creación (Submit)
 forms.create.addEventListener('submit', (e) => {
     e.preventDefault();
+    const fields = Array.from(forms.create.querySelectorAll('.component-field'));
+    const components = fields.map(f => ({
+        label: f.querySelector('.component-name')?.value || f.querySelector('.component-label')?.textContent || 'Extra',
+        pn: f.querySelector('.comp-pn')?.value.trim() || '',
+        sn: f.querySelector('.comp-sn')?.value.trim() || ''
+    })).filter(c => c.pn !== '' || c.sn !== '');
 
-    const componentFields = Array.from(forms.create.querySelectorAll('.component-field'));
-    const components = componentFields.map(field => {
-        const nameInput = field.querySelector('.component-name');
-        const pnInput = field.querySelector('.comp-pn');
-        const snInput = field.querySelector('.comp-sn');
-
-        let label = nameInput ? nameInput.value.trim() : (field.querySelector('.component-label')?.textContent || 'Extra');
-        let pn = pnInput ? pnInput.value.trim() : '';
-        let sn = snInput ? snInput.value.trim() : '';
-
-        return { label, pn, sn };
-    }).filter(c => c.pn !== '' || c.sn !== '');
-
-    if (!STATE.nextCreateId) {
-        showToast('Error: No se ha cargado la referencia. Reintenta.');
-        return;
-    }
+    if (!STATE.nextCreateId) return showToast('Error: ID no disponible');
 
     const data = {
         id: `C-${STATE.nextCreateId}`,
@@ -222,485 +184,34 @@ forms.create.addEventListener('submit', (e) => {
         components: components
     };
 
-    saveRecord(data)
-        .then(res => {
-            if (res.status === 'success') {
-                printLabel(data.id); // Flujo automático v2.22
-                showToast('Creación registrada con éxito');
-                forms.create.reset();
-                resetCreationForm();
-                showView('home');
-            } else {
-                console.error('Error al guardar creación:', res.message);
-                showToast('Error al guardar creación');
-            }
-        })
-        .catch(err => {
-            console.error('Error al guardar creación:', err);
-            showToast('Error de conexión al guardar creación');
-        });
-});
-
-function resetCreationForm() {
-    componentsList.innerHTML = `
-        <div class="component-field">
-            <span class="component-label">Placa Base</span>
-            <input type="text" class="comp-pn" placeholder="P/N">
-            <input type="text" class="comp-sn" placeholder="S/N">
-        </div>
-        <div class="component-field">
-            <span class="component-label">CPU</span>
-            <input type="text" class="comp-pn" placeholder="P/N">
-            <input type="text" class="comp-sn" placeholder="S/N">
-        </div>
-        <div class="component-field">
-            <span class="component-label">RAM</span>
-            <input type="text" class="comp-pn" placeholder="P/N">
-            <input type="text" class="comp-sn" placeholder="S/N">
-        </div>
-        <div class="component-field">
-            <span class="component-label">Caja</span>
-            <input type="text" class="comp-pn" placeholder="P/N">
-            <input type="text" class="comp-sn" placeholder="S/N">
-        </div>
-        <div class="component-field">
-            <span class="component-label">PCI-e (Opc.)</span>
-            <input type="text" class="comp-pn" placeholder="P/N">
-            <input type="text" class="comp-sn" placeholder="S/N">
-        </div>
-    `;
-}
-
-// --- MYSQL SAVE ---
-function saveRecord(record) {
-    return fetch('save.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(record)
-    })
-        .then(res => {
-            if (!res.ok) throw new Error('Respuesta no OK');
-            return res.json();
-        });
-}
-
-// --- HISTORY SCREEN ---
-    function loadHistory(searchRef = '', typeFilter = '', clientFilter = '', techFilter = '', problemFilter = '', sortFilter = 'date_desc', deliveredFilter = '') {
-    const params = new URLSearchParams();
-    if (searchRef) params.set('ref', searchRef);
-    if (typeFilter) params.set('type', typeFilter);
-
-    fetch(`get_records.php?${params.toString()}`)
-        .then(res => res.json())
-        .then(records => {
-            // Filtros adicionales del lado cliente
-            const filtered = records.filter(r => {
-                const matchClient = !clientFilter || (r.client || '').toLowerCase().includes(clientFilter.toLowerCase());
-                const matchTech = !techFilter || (r.technician || '').toLowerCase().includes(techFilter.toLowerCase());
-                const reviewText = r.problem || '';
-                const matchProblem = !problemFilter || reviewText.toLowerCase().includes(problemFilter.toLowerCase());
-                const matchDelivered = deliveredFilter === '' || String(r.delivered) === deliveredFilter;
-                return matchClient && matchTech && matchProblem && matchDelivered;
-            });
-
-            // Ordenado
-            const sorted = filtered.sort((a, b) => {
-                if (sortFilter === 'date_desc') {
-                    return new Date(b.date) - new Date(a.date);
-                }
-                if (sortFilter === 'date_asc') {
-                    return new Date(a.date) - new Date(b.date);
-                }
-                if (sortFilter === 'client') {
-                    return (a.client || '').localeCompare(b.client || '');
-                }
-                if (sortFilter === 'technician') {
-                    return (a.technician || '').localeCompare(b.technician || '');
-                }
-                if (sortFilter === 'problem') {
-                    const pa = a.problem || '';
-                    const pb = b.problem || '';
-                    return pa.localeCompare(pb);
-                }
-                if (sortFilter === 'id') {
-                    return (a.id || '').localeCompare(b.id || '');
-                }
-                if (sortFilter === 'type') {
-                    return (a.type || '').localeCompare(b.type || '');
-                }
-                return 0;
-            });
-
-            historyTableBody.innerHTML = '';
-
-            if (sorted.length === 0) {
-                const tr = document.createElement('tr');
-                tr.className = 'row-empty';
-                tr.innerHTML = `<td colspan="9" class="empty-row">No hay registros con estos filtros.</td>`;
-                historyTableBody.appendChild(tr);
-                return;
-            }
-
-            sorted.forEach(r => {
-                const tr = document.createElement('tr');
-                let rowClass = r.type === 'repair' ? 'row-repair' : 'row-creation';
-                if (r.delivered == 1) rowClass += ' is-delivered';
-                
-                tr.className = rowClass;
-                tr.innerHTML = `
-                    <td>${r.id}</td>
-                    <td>${r.type === 'repair' ? 'Reparación' : 'Creación'}</td>
-                    <td>${r.client}</td>
-                    <td>${r.technician}</td>
-                    <td>
-                        ${new Date(r.date).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' })}<br>
-                        <small style="opacity: 0.8;">${new Date(r.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</small>
-                    </td>
-                    <td>
-                        <span class="status-badge ${r.delivered == 1 ? 'status-delivered' : 'status-pending'}">
-                            ${r.delivered == 1 ? '✅ Entregado' : '⏳ Pendiente'}
-                        </span>
-                    </td>
-                    <td style="text-align: center;">
-                        <button class="btn-action btn-status" data-id="${r.id}" data-type="${r.type}" data-delivered="${r.delivered}" title="${r.delivered == 1 ? 'Marcar como Pendiente' : 'Marcar como Entregado'}">
-                            ${r.delivered == 1 ? '⏳' : '✅'}
-                        </button>
-                    </td>
-                    <td>${r.type === 'repair' ? r.problem : ''}</td>
-                    <td class="actions-cell">
-                        <button class="btn-action btn-edit" data-id="${r.id}" data-type="${r.type}" title="Editar registro">✏️</button>
-                        <button class="btn-action btn-delete" data-id="${r.id}" data-type="${r.type}" title="Eliminar registro">🗑️</button>
-                        <button class="btn-action btn-print-ref" data-id="${r.id}" title="Imprimir Etiqueta Brother">🏷️</button>
-                        <button class="btn-action btn-print" data-id="${r.id}" title="Imprimir Informe Zebra">🖨️</button>
-                    </td>
-                `;
-                historyTableBody.appendChild(tr);
-            });
-        })
-        .catch(err => {
-            console.error('Error cargando historial:', err);
-            showToast('No se pudo cargar el historial');
-        });
-}
-
-// --- LIVE SEARCH LOGIC v2.57 ---
-function triggerLiveSearch() {
-    const ref = searchRefInput.value.trim();
-    const type = document.getElementById('history-type-filter').value;
-    const client = document.getElementById('history-client-filter').value.trim();
-    const tech = document.getElementById('history-tech-filter').value.trim();
-    const problem = document.getElementById('history-problem-filter').value.trim();
-    const delivered = document.getElementById('history-delivered-filter').value;
-    
-    // Obtenemos el orden actual si hay alguno activo
-    let sortValue = 'date_desc';
-    const activeHeader = document.querySelector('#history-table thead th.active-sort');
-    if (activeHeader) {
-        const key = activeHeader.getAttribute('data-sort');
-        const state = activeHeader.getAttribute('data-sort-state');
-        if (state !== 'none') {
-            if (key === 'date') sortValue = `date_${state}`;
-            else {
-                if (state === 'desc') {
-                    if (key === 'id') sortValue = 'id_desc';
-                    else if (key === 'client') sortValue = 'client_desc';
-                    else if (key === 'technician') sortValue = 'tech_desc';
-                    else if (key === 'problem') sortValue = 'problem_desc';
-                } else {
-                    sortValue = key;
-                }
-            }
+    saveRecord(data).then(res => {
+        if (res.status === 'success') {
+            openPrintWindow(data.id);
+            showToast('Creación registrada 🏗️');
+            forms.create.reset();
+            resetCreationForm();
+            showView('home');
+        } else {
+            showToast('Error: ' + res.message);
         }
-    }
-
-    loadHistory(ref, type, client, tech, problem, sortValue, delivered);
-}
-
-// Función Debounce para no saturar el servidor
-function debounce(func, timeout = 300) {
-    let timer;
-    return (...args) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => { func.apply(this, args); }, timeout);
-    };
-}
-
-const debouncedSearch = debounce(() => triggerLiveSearch());
-
-// Asignar eventos live
-[searchRefInput, 
- document.getElementById('history-client-filter'), 
- document.getElementById('history-tech-filter'), 
- document.getElementById('history-problem-filter')].forEach(el => {
-    el.addEventListener('input', debouncedSearch);
-});
-
-[document.getElementById('history-type-filter'),
- document.getElementById('history-delivered-filter')].forEach(el => {
-    el.addEventListener('change', triggerLiveSearch);
-});
-
-btns.search.addEventListener('click', () => {
-    triggerLiveSearch();
-});
-
-// Ordenación por click en columnas
-const headerSortButtons = document.querySelectorAll('#history-table thead th.sort-header');
-let currentSortDirection = {
-    id: 'asc',
-    type: 'asc',
-    client: 'asc',
-    technician: 'asc',
-    date: 'desc',
-    problem: 'asc'
-};
-
-headerSortButtons.forEach(th => {
-    th.addEventListener('click', () => {
-        const sortKey = th.getAttribute('data-sort');
-        
-        // Ciclo: ninguno -> asc -> desc -> ninguno
-        let currentState = th.getAttribute('data-sort-state') || 'none';
-        let newState;
-        if (currentState === 'none') newState = 'asc';
-        else if (currentState === 'asc') newState = 'desc';
-        else newState = 'none';
-
-        // Actualizar visualmente todos los headers
-        headerSortButtons.forEach(h => {
-            h.classList.remove('active-sort', 'asc', 'desc');
-            h.setAttribute('data-sort-state', 'none');
-        });
-
-        let sortValue = 'date_desc'; // Por defecto
-
-        if (newState !== 'none') {
-            th.classList.add('active-sort', newState);
-            th.setAttribute('data-sort-state', newState);
-            
-            if (sortKey === 'date') {
-                sortValue = `date_${newState}`;
-            } else {
-                sortValue = newState === 'asc' ? sortKey : `${sortKey}_desc`; // Simplificación o ajuste según backend
-                // Nota: El backend espera 'sortFilter'. Si enviamos 'client' suele ser asc. 
-                // Para simplificar, si es 'desc' concatenamos o manejamos según soporte.
-                // Ajustamos para que coincida con lo que espera loadHistory/get_records.php
-                if (newState === 'desc') {
-                    if (sortKey === 'id') sortValue = 'id_desc';
-                    else if (sortKey === 'client') sortValue = 'client_desc';
-                    else if (sortKey === 'technician') sortValue = 'tech_desc';
-                    else if (sortKey === 'problem') sortValue = 'problem_desc';
-                } else {
-                    sortValue = sortKey;
-                }
-            }
-        }
-
-        const ref = searchRefInput.value.trim();
-        const type = document.getElementById('history-type-filter').value;
-        const client = document.getElementById('history-client-filter').value.trim();
-        const tech = document.getElementById('history-tech-filter').value.trim();
-        const problem = document.getElementById('history-problem-filter').value.trim();
-        const delivered = document.getElementById('history-delivered-filter').value;
-
-        loadHistory(ref, type, client, tech, problem, sortValue, delivered);
     });
 });
 
-// --- ELIMINADA DUPLICIDAD DE SHOWVIEW ---
-
-document.getElementById('btn-clear-filters').addEventListener('click', () => {
-    document.getElementById('search-ref').value = '';
-    document.getElementById('history-type-filter').value = '';
-    document.getElementById('history-client-filter').value = '';
-    document.getElementById('history-tech-filter').value = '';
-    document.getElementById('history-problem-filter').value = '';
-    document.getElementById('history-delivered-filter').value = '';
-    loadHistory();
-});
-
-// Event listeners para acciones de tabla
-document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('btn-edit')) {
-        const id = e.target.getAttribute('data-id');
-        const type = e.target.getAttribute('data-type');
-        openEditModal(id, type);
-    } else if (e.target.classList.contains('btn-delete')) {
-        const id = e.target.getAttribute('data-id');
-        const type = e.target.getAttribute('data-type');
-        deleteRecord(id, type);
-    } else if (e.target.classList.contains('btn-print-ref')) {
-        const id = e.target.getAttribute('data-id');
-        printLabel(id, 'QL-570', 1, 'ref'); // Solo la etiqueta (Brother)
-    } else if (e.target.classList.contains('btn-print')) {
-        const id = e.target.getAttribute('data-id');
-        printLabel(id, 'GK420d', 1, 'full'); // Solo el informe (Zebra)
-    } else if (e.target.classList.contains('btn-status')) {
-        const btn = e.target;
-        const id = btn.getAttribute('data-id');
-        const type = btn.getAttribute('data-type');
-        const wasDelivered = btn.getAttribute('data-delivered') == '1';
-        const newDelivered = wasDelivered ? 0 : 1;
-
-        // 1. ACTUALIZACIÓN OPTIMISTA (Instantánea)
-        btn.setAttribute('data-delivered', newDelivered);
-        btn.textContent = newDelivered === 1 ? '⏳' : '✅';
-        btn.title = newDelivered === 1 ? 'Marcar como Pendiente' : 'Marcar como Entregado';
-
-        const row = btn.closest('tr');
-        const badge = row.querySelector('.status-badge');
-        if (badge) {
-            badge.className = `status-badge ${newDelivered === 1 ? 'status-delivered' : 'status-pending'}`;
-            badge.textContent = newDelivered === 1 ? '✅ Entregado' : '⏳ Pendiente';
-        }
-
-        // 2. SINCRONIZACIÓN SILENCIOSA
-        fetch('change_status.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, type, delivered: newDelivered })
-        })
-        .then(res => res.json())
-        .then(res => {
-            if (res.status === 'success') {
-                showToast(newDelivered ? 'Equipo ENTREGADO ✅' : 'Equipo PENDIENTE ⏳');
-            } else {
-                showToast('Error: ' + res.message);
-                // Revertir si falla (opcional)
-            }
-        });
-    }
-});
-
-// Modal de edición
-const editModal = document.getElementById('edit-modal');
-const editForm = document.getElementById('edit-form');
-const editTechSelect = document.getElementById('edit-tech');
-const editComponentsList = document.getElementById('edit-components-list');
-
-function openEditModal(id, type) {
-    // Cargar datos del registro
-    fetch(`get_records.php?ref=${encodeURIComponent(id)}`)
-        .then(res => res.json())
-        .then(records => {
-            const record = records.find(r => r.id === id);
-            if (!record) return;
-
-            document.getElementById('edit-id').value = record.id;
-            document.getElementById('edit-type').value = record.type;
-            document.getElementById('edit-client').value = record.client;
-            document.getElementById('edit-tech').value = record.technician;
-            document.getElementById('edit-delivered').checked = record.delivered == 1;
-
-            // Poblar técnicos
-            editTechSelect.innerHTML = '';
-            STATE.technicians.forEach(tech => {
-                const opt = document.createElement('option');
-                opt.value = tech;
-                opt.textContent = tech;
-                if (tech === record.technician) opt.selected = true;
-                editTechSelect.appendChild(opt);
-            });
-
-            if (record.type === 'repair') {
-                document.getElementById('edit-problem-group').style.display = 'block';
-                document.getElementById('edit-accessories-group').style.display = 'block';
-                document.getElementById('edit-components-group').style.display = 'none';
-                document.getElementById('edit-problem').value = record.problem;
-                document.getElementById('edit-accessories').value = record.accessories || '';
-            } else {
-                document.getElementById('edit-problem-group').style.display = 'none';
-                document.getElementById('edit-accessories-group').style.display = 'none';
-                document.getElementById('edit-components-group').style.display = 'block';
-
-                const defaultComponents = [
-                    'Placa Base',
-                    'CPU',
-                    'RAM',
-                    'Caja',
-                    'PCI-e (Opcional)'
-                ];
-
-                const filledComponents = {};
-                (record.components || []).forEach(comp => {
-                    filledComponents[comp.label] = { pn: comp.pn || '', sn: comp.sn || '' };
-                });
-
-                editComponentsList.innerHTML = '';
-                defaultComponents.forEach(label => {
-                    const div = document.createElement('div');
-                    div.className = 'component-field';
-                    const data = filledComponents[label] || { pn: '', sn: '' };
-                    div.innerHTML = `
-                        <span class="component-label">${label}</span>
-                        <input type="text" class="comp-pn" value="${data.pn}" placeholder="P/N">
-                        <input type="text" class="comp-sn" value="${data.sn}" placeholder="S/N">
-                    `;
-                    editComponentsList.appendChild(div);
-                });
-
-                // Añadir adicionales si hay más componentes de la creación
-                (record.components || []).forEach(comp => {
-                    if (!defaultComponents.includes(comp.label)) {
-                        const div = document.createElement('div');
-                        div.className = 'component-field';
-                        div.innerHTML = `
-                            <span class="component-label">${comp.label}</span>
-                            <input type="text" class="comp-pn" value="${comp.pn || ''}" placeholder="P/N">
-                            <input type="text" class="comp-sn" value="${comp.sn || ''}" placeholder="S/N">
-                        `;
-                        editComponentsList.appendChild(div);
-                    }
-                });
-            }
-
-            editModal.classList.remove('hidden');
-        });
+/**
+ * Resetea la lista de componentes por defecto en el formulario de creación
+ */
+function resetCreationForm() {
+    componentsList.innerHTML = `
+        <div class="component-field"><span class="component-label">Placa Base</span><input type="text" class="comp-pn" placeholder="P/N"><input type="text" class="comp-sn" placeholder="S/N"></div>
+        <div class="component-field"><span class="component-label">CPU</span><input type="text" class="comp-pn" placeholder="P/N"><input type="text" class="comp-sn" placeholder="S/N"></div>
+        <div class="component-field"><span class="component-label">RAM</span><input type="text" class="comp-pn" placeholder="P/N"><input type="text" class="comp-sn" placeholder="S/N"></div>
+        <div class="component-field"><span class="component-label">Caja</span><input type="text" class="comp-pn" placeholder="P/N"><input type="text" class="comp-sn" placeholder="S/N"></div>
+        <div class="component-field"><span class="component-label">PCI-e (Opc.)</span><input type="text" class="comp-pn" placeholder="P/N"><input type="text" class="comp-sn" placeholder="S/N"></div>
+    `;
 }
 
-document.querySelector('.modal-close').addEventListener('click', () => {
-    editModal.classList.add('hidden');
-});
-
-editForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const data = {
-        id: document.getElementById('edit-id').value,
-        type: document.getElementById('edit-type').value,
-        client: document.getElementById('edit-client').value,
-        technician: document.getElementById('edit-tech').value,
-        delivered: document.getElementById('edit-delivered').checked ? 1 : 0
-    };
-
-    if (data.type === 'repair') {
-        data.problem = document.getElementById('edit-problem').value;
-        data.accessories = document.getElementById('edit-accessories').value;
-    } else {
-        const componentFields = Array.from(editComponentsList.querySelectorAll('.component-field'));
-        data.components = componentFields.map(field => ({
-            label: field.querySelector('.component-label')?.textContent || field.querySelector('.component-name')?.value || 'Extra',
-            pn: field.querySelector('.comp-pn').value.trim(),
-            sn: field.querySelector('.comp-sn').value.trim()
-        })).filter(c => c.pn !== '' || c.sn !== '');
-    }
-
-    updateRecord(data)
-        .then(res => {
-            if (res.status === 'success') {
-                editModal.classList.add('hidden');
-                showToast('Registro actualizado con éxito');
-                loadHistory(); // Recargar historial
-            } else {
-                showToast('Error al actualizar registro');
-            }
-        })
-        .catch(err => {
-            showToast('Error de conexión');
-        });
-});
-
-document.getElementById('edit-add-component').addEventListener('click', () => {
+// Botón para añadir componentes extra
+btns.addComponent.addEventListener('click', () => {
     const div = document.createElement('div');
     div.className = 'component-field';
     div.innerHTML = `
@@ -709,75 +220,274 @@ document.getElementById('edit-add-component').addEventListener('click', () => {
         <input type="text" class="comp-sn" placeholder="S/N">
         <button type="button" class="remove-component">✖</button>
     `;
-    editComponentsList.appendChild(div);
-
-    div.querySelector('.remove-component').addEventListener('click', () => {
-        div.remove();
-    });
+    componentsList.appendChild(div);
+    div.querySelector('.remove-component').onclick = () => div.remove();
 });
+
+// --- COMUNICACIÓN CON SERVIDOR (PROMISES) ---
+
+function saveRecord(record) {
+    return fetch('save.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+    }).then(res => res.json());
+}
 
 function updateRecord(record) {
     return fetch('update.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(record)
-    })
-        .then(res => res.json());
+    }).then(res => res.json());
 }
+
+// --- HISTORIAL Y BÚSQUEDA ---
+
+async function loadHistory(filters = {}) {
+    try {
+        const query = new URLSearchParams({ id: filters.ref || '' }).toString();
+        const res = await fetch(`get_records.php?${query}`);
+        const records = await res.json();
+
+        // Filtrado en el cliente (para no sobrecargar el servidor con cada tecla)
+        const filtered = records.filter(r => {
+            const matchClient = !filters.client || (r.client || '').toLowerCase().includes(filters.client.toLowerCase());
+            const matchTech = !filters.tech || (r.technician || '').toLowerCase().includes(filters.tech.toLowerCase());
+            const matchProblem = !filters.problem || (r.problem || '').toLowerCase().includes(filters.problem.toLowerCase());
+            const matchDelivered = filters.delivered === '' || String(r.delivered) === filters.delivered;
+            return matchClient && matchTech && matchProblem && matchDelivered;
+        });
+
+        renderHistoryTable(filtered);
+    } catch (err) {
+        showToast('Error al cargar historial');
+    }
+}
+
+function renderHistoryTable(records) {
+    historyTableBody.innerHTML = '';
+    if (records.length === 0) {
+        historyTableBody.innerHTML = '<tr><td colspan="9" style="text-align:center">Sin registros</td></tr>';
+        return;
+    }
+
+    records.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = (r.type === 'repair' ? 'row-repair' : 'row-creation') + (r.delivered == 1 ? ' is-delivered' : '');
+        tr.innerHTML = `
+            <td>${r.id}</td>
+            <td>${r.type === 'repair' ? 'Reparación' : 'Creación'}</td>
+            <td>${r.client}</td>
+            <td>${r.technician}</td>
+            <td>${new Date(r.date).toLocaleDateString()}</td>
+            <td><span class="status-badge ${r.delivered == 1 ? 'status-delivered' : 'status-pending'}">${r.delivered == 1 ? '✅ Entregado' : '⏳ Pendiente'}</span></td>
+            <td style="text-align:center"><button class="btn-action btn-status" data-id="${r.id}" data-type="${r.type}" data-delivered="${r.delivered}">${r.delivered == 1 ? '⏳' : '✅'}</button></td>
+            <td>${r.problem || ''}</td>
+            <td class="actions-cell">
+                <button class="btn-action btn-edit" data-id="${r.id}" data-type="${r.type}">✏️</button>
+                <button class="btn-action btn-delete" data-id="${r.id}" data-type="${r.type}">🗑️</button>
+                <button class="btn-action btn-print-ref" data-id="${r.id}">🖨️</button>
+            </td>
+        `;
+        historyTableBody.appendChild(tr);
+    });
+}
+
+/**
+ * Función que centraliza la búsqueda en tiempo real
+ */
+function triggerLiveSearch() {
+    loadHistory({
+        ref: searchRefInput.value.trim(),
+        type: document.getElementById('history-type-filter').value,
+        client: document.getElementById('history-client-filter').value.trim(),
+        tech: document.getElementById('history-tech-filter').value.trim(),
+        problem: document.getElementById('history-problem-filter').value.trim(),
+        delivered: document.getElementById('history-delivered-filter').value
+    });
+}
+
+// Eventos de Navegación Home
+btns.toRepair.onclick = () => showView('repair');
+btns.toCreate.onclick = () => showView('create');
+btns.toHistory.onclick = () => showView('history');
+btns.back.forEach(b => b.onclick = () => showView('home'));
+
+// Debounce para búsqueda
+let searchTimer;
+const debounceSearch = () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(triggerLiveSearch, 300);
+};
+
+[searchRefInput, 'history-client-filter', 'history-tech-filter', 'history-problem-filter'].forEach(id => {
+    const el = typeof id === 'string' ? document.getElementById(id) : id;
+    if (el) el.addEventListener('input', debounceSearch);
+});
+
+['history-type-filter', 'history-delivered-filter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', triggerLiveSearch);
+});
+
+// Limpiar filtros
+document.getElementById('btn-clear-filters').onclick = () => {
+    ['search-ref', 'history-client-filter', 'history-tech-filter', 'history-problem-filter'].forEach(id => document.getElementById(id).value = '');
+    ['history-type-filter', 'history-delivered-filter'].forEach(id => document.getElementById(id).value = '');
+    triggerLiveSearch();
+};
+
+// --- MODAL DE EDICIÓN ---
+
+const editModal = document.getElementById('edit-modal');
+const editForm = document.getElementById('edit-form');
+
+function openEditModal(id, type) {
+    fetch(`get_records.php?id=${id}`).then(res => res.json()).then(records => {
+        const r = records.find(rec => rec.id === id);
+        if (!r) return;
+
+        document.getElementById('edit-id').value = r.id;
+        document.getElementById('edit-type').value = r.type;
+        document.getElementById('edit-client').value = r.client;
+        document.getElementById('edit-delivered').checked = r.delivered == 1;
+
+        // Poblar técnicos en el modal
+        const sel = document.getElementById('edit-tech');
+        sel.innerHTML = '';
+        STATE.technicians.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = opt.textContent = t;
+            if (t === r.technician) opt.selected = true;
+            sel.appendChild(opt);
+        });
+
+        // Mostrar u ocultar campos según tipo
+        const isRepair = r.type === 'repair';
+        document.getElementById('edit-problem-group').style.display = isRepair ? 'block' : 'none';
+        document.getElementById('edit-accessories-group').style.display = isRepair ? 'block' : 'none';
+        document.getElementById('edit-components-group').style.display = isRepair ? 'none' : 'block';
+
+        if (isRepair) {
+            document.getElementById('edit-problem').value = r.problem;
+            document.getElementById('edit-accessories').value = r.accessories || '';
+        } else {
+            renderEditComponents(r.components || []);
+        }
+
+        editModal.classList.remove('hidden');
+    });
+}
+
+function renderEditComponents(components) {
+    const list = document.getElementById('edit-components-list');
+    list.innerHTML = '';
+    const defaults = ['Placa Base', 'CPU', 'RAM', 'Caja', 'PCI-e (Opc.)'];
+    
+    // Mostramos los por defecto rellenados o vacíos
+    defaults.forEach(label => {
+        const c = components.find(comp => comp.label === label) || { pn: '', sn: '' };
+        list.insertAdjacentHTML('beforeend', `
+            <div class="component-field">
+                <span class="component-label">${label}</span>
+                <input type="text" class="comp-pn" value="${c.pn}" placeholder="P/N">
+                <input type="text" class="comp-sn" value="${c.sn}" placeholder="S/N">
+            </div>
+        `);
+    });
+
+    // Añadimos extras
+    components.forEach(c => {
+        if (!defaults.includes(c.label)) {
+            list.insertAdjacentHTML('beforeend', `
+                <div class="component-field">
+                    <input type="text" class="component-name" value="${c.label}" required>
+                    <input type="text" class="comp-pn" value="${c.pn}" placeholder="P/N">
+                    <input type="text" class="comp-sn" value="${c.sn}" placeholder="S/N">
+                    <button type="button" class="remove-component">✖</button>
+                </div>
+            `);
+        }
+    });
+}
+
+// Guardar edición
+editForm.onsubmit = (e) => {
+    e.preventDefault();
+    const type = document.getElementById('edit-type').value;
+    const data = {
+        id: document.getElementById('edit-id').value,
+        type: type,
+        client: document.getElementById('edit-client').value,
+        technician: document.getElementById('edit-tech').value,
+        delivered: document.getElementById('edit-delivered').checked ? 1 : 0
+    };
+
+    if (type === 'repair') {
+        data.problem = document.getElementById('edit-problem').value;
+        data.accessories = document.getElementById('edit-accessories').value;
+    } else {
+        const fields = Array.from(document.querySelectorAll('#edit-components-list .component-field'));
+        data.components = fields.map(f => ({
+            label: f.querySelector('.component-label')?.textContent || f.querySelector('.component-name')?.value || 'Extra',
+            pn: f.querySelector('.comp-pn').value.trim(),
+            sn: f.querySelector('.comp-sn').value.trim()
+        })).filter(c => c.pn !== '' || c.sn !== '');
+    }
+
+    updateRecord(data).then(() => {
+        editModal.classList.add('hidden');
+        showToast('Guardado ✅');
+        triggerLiveSearch();
+    });
+};
+
+document.querySelector('.modal-close').onclick = () => editModal.classList.add('hidden');
+
+// --- ACCIONES DE TABLA ---
+
+document.onclick = (e) => {
+    const id = e.target.dataset.id;
+    const type = e.target.dataset.type;
+    if (!id) return;
+
+    if (e.target.classList.contains('btn-edit')) openEditModal(id, type);
+    if (e.target.classList.contains('btn-delete')) deleteRecord(id, type);
+    if (e.target.classList.contains('btn-print-ref')) openPrintWindow(id);
+    if (e.target.classList.contains('btn-status')) {
+        const next = e.target.dataset.delivered == 1 ? 0 : 1;
+        fetch('change_status.php', {
+            method: 'POST',
+            body: JSON.stringify({ id, type, delivered: next })
+        }).then(() => triggerLiveSearch());
+    }
+};
 
 function deleteRecord(id, type) {
-    if (!confirm(`¿Estás seguro de eliminar el registro ${id}?`)) return;
-
-    fetch('delete.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, type })
-    })
-        .then(res => res.json())
-        .then(res => {
-            if (res.status === 'success') {
-                showToast('Registro eliminado con éxito');
-                loadHistory();
-            } else {
-                showToast('Error al eliminar registro');
-            }
-        })
-        .catch(err => {
-            showToast('Error de conexión');
-        });
+    if (confirm(`¿Eliminar ${id}?`)) {
+        fetch('delete.php', { method: 'POST', body: JSON.stringify({ id, type }) })
+            .then(() => { showToast('Eliminado 🗑️'); triggerLiveSearch(); });
+    }
 }
 
-// --- TOAST ---
+// --- UTILIDADES ---
+
 function showToast(msg) {
-    document.getElementById('toast-message').textContent = msg;
+    toast.querySelector('#toast-message').textContent = msg;
     toast.classList.remove('hidden');
     setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
-function printLabels(id, copies = 1, printer = 'gk420d') {
-    printLabel(id, printer, copies);
+function openPrintWindow(id) {
+    window.open(`print.php?id=${encodeURIComponent(id)}`, '_blank');
 }
 
-function printLabel(id, printer = null, copies = 1, mode = 'full') {
-    let url = `print.php?id=${encodeURIComponent(id)}`;
-    if (printer) url += `&printer=${encodeURIComponent(printer)}`;
-    if (copies > 1) url += `&copies=${encodeURIComponent(copies)}`;
-    if (mode !== 'full') url += `&mode=${encodeURIComponent(mode)}`;
-
-    const targetLabel = printer ? `(${printer})` : '(Auto)';
-    
-    fetch(url)
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                showToast(`Impresión enviada ${targetLabel}: ${id}`);
-            } else {
-                console.error('Print error:', data);
-                showToast(`Error al imprimir ${targetLabel}`);
-            }
-        })
-        .catch(err => {
-            console.error('Fetch error:', err);
-            showToast('Error al conectar con servidor de impresión');
-        });
-}
+// Animación de botones (Glow)
+document.querySelectorAll('.massive-btn').forEach(btn => {
+    btn.onmousemove = (e) => {
+        const rect = btn.getBoundingClientRect();
+        btn.style.setProperty('--x', `${e.clientX - rect.left}px`);
+        btn.style.setProperty('--y', `${e.clientY - rect.top}px`);
+    };
+});
