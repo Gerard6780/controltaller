@@ -27,33 +27,20 @@ if (!$data || !isset($data['type']) || !isset($data['id'])) {
     exit;
 }
 
-$id = $data['id'];
 $type = $data['type'];
+$id = $data['id'];
 
 try {
     $pdo->beginTransaction();
 
     if ($type === 'repair') {
         $stmt = $pdo->prepare("UPDATE repairs SET client = ?, technician = ?, problem = ?, accessories = ?, delivered = ? WHERE id = ?");
-        $stmt->execute([
-            $data['client'], 
-            $data['technician'], 
-            $data['problem'], 
-            $data['accessories'] ?? '', 
-            $data['delivered'] ?? 0, 
-            $id
-        ]);
+        $stmt->execute([$data['client'], $data['technician'], $data['problem'], $data['accessories'] ?? '', $data['delivered'] ?? 0, $id]);
     }
     elseif ($type === 'creation') {
         $componentsJson = json_encode($data['components'] ?? []);
         $stmt = $pdo->prepare("UPDATE creations SET client = ?, technician = ?, delivered = ?, components = ? WHERE id = ?");
-        $stmt->execute([
-            $data['client'], 
-            $data['technician'], 
-            $data['delivered'] ?? 0, 
-            $componentsJson, 
-            $id
-        ]);
+        $stmt->execute([$data['client'], $data['technician'], $data['delivered'] ?? 0, $componentsJson, $id]);
     }
     else {
         throw new Exception('Tipo de registro desconocido');
@@ -63,7 +50,7 @@ try {
     echo json_encode(['status' => 'success']);
 }
 catch (Exception $e) {
-    if ($pdo->inTransaction()) { $pdo->rollBack(); }
+    $pdo->rollBack();
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>

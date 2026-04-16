@@ -37,7 +37,6 @@ try {
         $stmt->execute([$data['id'], $data['client'], $data['technician'], $data['problem'], $data['accessories'] ?? '', $data['date']]);
     }
     elseif ($type === 'creation') {
-        // En la versión anterior guardábamos componentes en JSON en la tabla principal
         $componentsJson = json_encode($data['components'] ?? []);
         $stmt = $pdo->prepare("INSERT INTO creations (id, client, technician, date, components) VALUES (?,?,?,?,?)");
         $stmt->execute([$data['id'], $data['client'], $data['technician'], $data['date'], $componentsJson]);
@@ -50,7 +49,6 @@ try {
     echo json_encode(['status' => 'success', 'id' => $data['id'] ?? null, 'type' => $type]);
 }
 catch (Exception $e) {
-    if ($pdo->inTransaction()) { $pdo->rollBack(); }
+    $pdo->rollBack();
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
-?>

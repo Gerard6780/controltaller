@@ -38,7 +38,7 @@ try {
         $stmt->execute([$id]);
     }
     elseif ($type === 'creation') {
-        // En la versión anterior eliminábamos de ambas tablas (aunque ya usábamos JSON)
+        // Eliminar componentes primero (FK)
         $pdo->prepare("DELETE FROM creation_components WHERE creation_id = ?")->execute([$id]);
         $stmt = $pdo->prepare("DELETE FROM creations WHERE id = ?");
         $stmt->execute([$id]);

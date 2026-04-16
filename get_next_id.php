@@ -16,7 +16,12 @@ $options = [
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
 
-    // Obtener el siguiente ID para Reparaciones (R-)
+    // DEPURE: Ver cuántos registros hay en total
+    $countR = $pdo->query("SELECT COUNT(*) FROM repairs")->fetchColumn();
+    $countC = $pdo->query("SELECT COUNT(*) FROM creations")->fetchColumn();
+
+    // Obtener el siguiente ID para Reparaciones (prefijo R-)
+    // Usamos SQL para encontrar el máximo directamente
     $stmtR = $pdo->query("SELECT id FROM repairs WHERE id LIKE 'R-%' OR id LIKE 'r-%'");
     $idsR = $stmtR->fetchAll(PDO::FETCH_COLUMN);
     $maxR = 0;
@@ -27,7 +32,7 @@ try {
     }
     $nextRepairId = ($maxR === 0 && empty($idsR)) ? 1000 : max(1000, $maxR + 1);
 
-    // Obtener el siguiente ID para Creaciones (C-)
+    // Obtener el siguiente ID para Creaciones (prefijo C-)
     $stmtC = $pdo->query("SELECT id FROM creations WHERE id LIKE 'C-%' OR id LIKE 'c-%'");
     $idsC = $stmtC->fetchAll(PDO::FETCH_COLUMN);
     $maxC = 0;
@@ -41,7 +46,15 @@ try {
     echo json_encode([
         'status' => 'success',
         'nextRepairId' => (int)$nextRepairId,
-        'nextCreateId' => (int)$nextCreateId
+        'nextCreateId' => (int)$nextCreateId,
+        'debug' => [
+            'db' => $db,
+            'repairs_count' => $countR,
+            'creations_count' => $countC,
+            'max_repair_found' => $maxR,
+            'max_creation_found' => $maxC,
+            'sample_repair_ids' => array_slice($idsR, 0, 5)
+        ]
     ]);
 
 } catch (Exception $e) {

@@ -1,16 +1,11 @@
--- Esquema Final de la Base de Datos para Control de Taller
--- Versión refactorizada: 16/04/2026
-
 CREATE DATABASE IF NOT EXISTS tpv_db;
 USE tpv_db;
 
--- Tabla de Técnicos
 CREATE TABLE IF NOT EXISTS technicians (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL
 );
 
--- Tabla de Reparaciones
 CREATE TABLE IF NOT EXISTS repairs (
     id VARCHAR(20) PRIMARY KEY,
     client VARCHAR(100) NOT NULL,
@@ -21,8 +16,6 @@ CREATE TABLE IF NOT EXISTS repairs (
     date DATETIME NOT NULL
 );
 
--- Tabla de Creaciones (Ensamblajes)
--- Los componentes se guardan en formato JSON en la columna 'components'
 CREATE TABLE IF NOT EXISTS creations (
     id VARCHAR(20) PRIMARY KEY,
     client VARCHAR(100) NOT NULL,
@@ -32,7 +25,15 @@ CREATE TABLE IF NOT EXISTS creations (
     date DATETIME NOT NULL
 );
 
--- Inserción de Técnicos por defecto
+CREATE TABLE IF NOT EXISTS creation_components (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    creation_id VARCHAR(20) NOT NULL,
+    component_label VARCHAR(50),
+    component_value VARCHAR(100),
+    FOREIGN KEY (creation_id) REFERENCES creations(id) ON DELETE CASCADE
+);
+
+-- Lista Completa de Técnicos
 TRUNCATE TABLE technicians;
 INSERT INTO technicians (name) VALUES 
 ('Alex Linares'), 
@@ -40,12 +41,15 @@ INSERT INTO technicians (name) VALUES
 ('Stephane Geronimi'), 
 ('Dani Honrado'), 
 ('Gerard Anta'), 
-('Xavier Lamarca');
+('Xavier Lamarca'), 
+('Daniel Palacios');
 
--- Registro de prueba (Reparación)
+-- Registros de Prueba
 INSERT IGNORE INTO repairs (id, client, technician, problem, accessories, delivered, date) 
-VALUES ('R-1000', 'Cliente de Prueba', 'Alex Linares', 'No enciende tras actualización', 'Cargador original', 0, NOW());
+VALUES ('R-0000', 'Cliente de Prueba', 'Dani Honrado', 'Fallo detectado post-traslado', 'Cargador', 0, NOW());
 
--- Registro de prueba (Creación)
 INSERT IGNORE INTO creations (id, client, technician, components, delivered, date) 
-VALUES ('C-5000', 'Cliente de Empresa', 'Gerard Anta', '[{"label":"Placa Base","pn":"PB-123","sn":"SN-456"},{"label":"CPU","pn":"I7-12GEN","sn":"SN-CPU-789"}]', 0, NOW());
+VALUES ('C-0000', 'Taller Móvil Test', 'Alex Linares', '[{"label":"Chasis","value":"Lian Li"},{"label":"Fuente","value":"Corsair 850W"}]', 0, NOW());
+
+INSERT IGNORE INTO creation_components (creation_id, component_label, component_value) 
+VALUES ('C-0000', 'Chasis', 'Lian Li'), ('C-0000', 'Fuente', 'Corsair 850W');

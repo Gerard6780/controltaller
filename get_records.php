@@ -15,60 +15,52 @@ $options = [
 
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
-}
-catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-    exit;
-}
 
-$idFilter = $_GET['id'] ?? null;
-$typeFilter = $_GET['type'] ?? '';
-$clientFilter = $_GET['client'] ?? '';
-$techFilter = $_GET['technician'] ?? '';
-$problemFilter = $_GET['problem'] ?? '';
-$deliveredFilter = isset($_GET['delivered']) && $_GET['delivered'] !== '' ? (int)$_GET['delivered'] : null;
+    $refFilter = isset($_GET['ref']) ? trim($_GET['ref']) : '';
+    $typeFilter = isset($_GET['type']) ? trim($_GET['type']) : '';
+    $refLike = "%$refFilter%";
 
-try {
     $repairs = [];
     $creations = [];
 
+    // Reparaciones
     if ($typeFilter === '' || $typeFilter === 'repair') {
-        $sql = "SELECT id, 'repair' AS type, client, technician, problem, accessories, delivered, date FROM repairs WHERE 1=1";
-        $params = [];
-        if ($idFilter) { $sql .= " AND id LIKE ?"; $params[] = "%$idFilter%"; }
-        if ($clientFilter) { $sql .= " AND client LIKE ?"; $params[] = "%$clientFilter%"; }
-        if ($techFilter) { $sql .= " AND technician LIKE ?"; $params[] = "%$techFilter%"; }
-        if ($problemFilter) { $sql .= " AND problem LIKE ?"; $params[] = "%$problemFilter%"; }
-        if ($deliveredFilter !== null) { $sql .= " AND delivered = ?"; $params[] = $deliveredFilter; }
-        $sql .= " ORDER BY date DESC LIMIT 100";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $repairs = $stmt->fetchAll();
-    }
-
-    if ($typeFilter === '' || $typeFilter === 'creation') {
-        $sql = "SELECT id, 'creation' AS type, client, technician, delivered, date, components FROM creations WHERE 1=1";
-        $params = [];
-        if ($idFilter) { $sql .= " AND id LIKE ?"; $params[] = "%$idFilter%"; }
-        if ($clientFilter) { $sql .= " AND client LIKE ?"; $params[] = "%$clientFilter%"; }
-        if ($techFilter) { $sql .= " AND technician LIKE ?"; $params[] = "%$techFilter%"; }
-        if ($deliveredFilter !== null) { $sql .= " AND delivered = ?"; $params[] = $deliveredFilter; }
-        $sql .= " ORDER BY date DESC LIMIT 100";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $creations = $stmt->fetchAll();
-
-        foreach ($creations as &$creation) {
-            $creation['components'] = json_decode($creation['components'] ?? '[]', true);
-            $creation['problem'] = null;
+        if ($refFilter) {
+            $stmtRepair = $pdo->prepare("SELECT id, 'repair' AS type, client, technician, problem, accessories, delivered, date FROM repairs WHERE id LIKE ? ORDER BY date DESC");
+            $stmtRepair->execute([$refLike]);
+        } else {
+            $stmtRepair = $pdo->query("SELECT id, 'repair' AS type, client, technician, problem, accessories, delivered, date FROM repairs ORDER BY date DESC LIMIT 100");
         }
+        $repairs = $stmtRepair->fetchAll();
     }
 
-    $all = array_merge($repairs, $creations);
-    usort($all, function($a, $b) { return strcmp($b['date'], $a['date']); });
-    echo json_encode(array_values($all));
-}
-catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    // Creaciones
+    if ($typeFilter === '' || $typeFilter === 'creation') {
+        if ($refFilter) {
+            $stmtCreation = $pdo->prepare("SELECT id, 'creation' AS type, client, technician, delivered, date, components FROM creations WHERE id LIKE ? ORDER BY date DESC");
+            $stmtCreation->execute([$refLike]);
+        } else {
+            $stmtCreation = $pdo->query("SELECT id, 'creation' AS type, client, technician, delivered, date, components FROM creations ORDER BY date DESC LIMIT 100");
+        }
+        $creations = $stmtCreation->fetchAll();
+    }
+
+    // Recoger componentes para cada creación
+    // Procesar componentes de cada creación (ahora desde campo JSON)
+    foreach ($creations as &$creation) {
+        $creation['components'] = json_decode($creation['components'] ?? '[]', true);
+        $creation['problem'] = null;
+    }
+
+    // Mezclar registros y ordenar por fecha desc
+    $records = array_merge($repairs, $creations);
+    usort($records, function ($a, $b) {
+        return strtotime($b['date']) <=> strtotime($a['date']);
+    });
+
+    echo json_encode($records);
+
+} catch (PDOException $e) {
+    echo json_encode([]);
 }
 ?>

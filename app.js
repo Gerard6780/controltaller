@@ -177,7 +177,7 @@ forms.repair.addEventListener('submit', (e) => {
     saveRecord(data)
         .then(res => {
             if (res.status === 'success') {
-                printLabel(data.id); 
+                printLabel(data.id); // Flujo automático v2.22
                 showToast('Reparación registrada con éxito');
                 forms.repair.reset();
                 showView('home');
@@ -225,7 +225,7 @@ forms.create.addEventListener('submit', (e) => {
     saveRecord(data)
         .then(res => {
             if (res.status === 'success') {
-                printLabel(data.id); 
+                printLabel(data.id); // Flujo automático v2.22
                 showToast('Creación registrada con éxito');
                 forms.create.reset();
                 resetCreationForm();
@@ -285,28 +285,63 @@ function saveRecord(record) {
 }
 
 // --- HISTORY SCREEN ---
-function loadHistory(searchRef = '', typeFilter = '', clientFilter = '', techFilter = '', problemFilter = '', sortFilter = 'date_desc', deliveredFilter = '') {
+    function loadHistory(searchRef = '', typeFilter = '', clientFilter = '', techFilter = '', problemFilter = '', sortFilter = 'date_desc', deliveredFilter = '') {
     const params = new URLSearchParams();
-    if (searchRef) params.set('id', searchRef);
+    if (searchRef) params.set('ref', searchRef);
     if (typeFilter) params.set('type', typeFilter);
-    if (clientFilter) params.set('client', clientFilter);
-    if (techFilter) params.set('technician', techFilter);
-    if (problemFilter) params.set('problem', problemFilter);
-    if (deliveredFilter !== '') params.set('delivered', deliveredFilter);
 
     fetch(`get_records.php?${params.toString()}`)
         .then(res => res.json())
         .then(records => {
+            // Filtros adicionales del lado cliente
+            const filtered = records.filter(r => {
+                const matchClient = !clientFilter || (r.client || '').toLowerCase().includes(clientFilter.toLowerCase());
+                const matchTech = !techFilter || (r.technician || '').toLowerCase().includes(techFilter.toLowerCase());
+                const reviewText = r.problem || '';
+                const matchProblem = !problemFilter || reviewText.toLowerCase().includes(problemFilter.toLowerCase());
+                const matchDelivered = deliveredFilter === '' || String(r.delivered) === deliveredFilter;
+                return matchClient && matchTech && matchProblem && matchDelivered;
+            });
+
+            // Ordenado
+            const sorted = filtered.sort((a, b) => {
+                if (sortFilter === 'date_desc') {
+                    return new Date(b.date) - new Date(a.date);
+                }
+                if (sortFilter === 'date_asc') {
+                    return new Date(a.date) - new Date(b.date);
+                }
+                if (sortFilter === 'client') {
+                    return (a.client || '').localeCompare(b.client || '');
+                }
+                if (sortFilter === 'technician') {
+                    return (a.technician || '').localeCompare(b.technician || '');
+                }
+                if (sortFilter === 'problem') {
+                    const pa = a.problem || '';
+                    const pb = b.problem || '';
+                    return pa.localeCompare(pb);
+                }
+                if (sortFilter === 'id') {
+                    return (a.id || '').localeCompare(b.id || '');
+                }
+                if (sortFilter === 'type') {
+                    return (a.type || '').localeCompare(b.type || '');
+                }
+                return 0;
+            });
+
             historyTableBody.innerHTML = '';
 
-            if (records.length === 0) {
+            if (sorted.length === 0) {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan="9" style="text-align:center">No hay registros con estos filtros.</td>`;
+                tr.className = 'row-empty';
+                tr.innerHTML = `<td colspan="9" class="empty-row">No hay registros con estos filtros.</td>`;
                 historyTableBody.appendChild(tr);
                 return;
             }
 
-            records.forEach(r => {
+            sorted.forEach(r => {
                 const tr = document.createElement('tr');
                 let rowClass = r.type === 'repair' ? 'row-repair' : 'row-creation';
                 if (r.delivered == 1) rowClass += ' is-delivered';
@@ -331,10 +366,11 @@ function loadHistory(searchRef = '', typeFilter = '', clientFilter = '', techFil
                             ${r.delivered == 1 ? '⏳' : '✅'}
                         </button>
                     </td>
-                    <td>${r.problem || ''}</td>
+                    <td>${r.type === 'repair' ? r.problem : ''}</td>
                     <td class="actions-cell">
                         <button class="btn-action btn-edit" data-id="${r.id}" data-type="${r.type}" title="Editar registro">✏️</button>
                         <button class="btn-action btn-delete" data-id="${r.id}" data-type="${r.type}" title="Eliminar registro">🗑️</button>
+                        <button class="btn-action btn-print-ref" data-id="${r.id}" title="Imprimir Etiqueta Brother">🏷️</button>
                         <button class="btn-action btn-print" data-id="${r.id}" title="Imprimir Informe Zebra">🖨️</button>
                     </td>
                 `;
@@ -347,7 +383,7 @@ function loadHistory(searchRef = '', typeFilter = '', clientFilter = '', techFil
         });
 }
 
-// --- LIVE SEARCH LOGIC ---
+// --- LIVE SEARCH LOGIC v2.57 ---
 function triggerLiveSearch() {
     const ref = searchRefInput.value.trim();
     const type = document.getElementById('history-type-filter').value;
@@ -355,9 +391,32 @@ function triggerLiveSearch() {
     const tech = document.getElementById('history-tech-filter').value.trim();
     const problem = document.getElementById('history-problem-filter').value.trim();
     const delivered = document.getElementById('history-delivered-filter').value;
-    loadHistory(ref, type, client, tech, problem, 'date_desc', delivered);
+    
+    // Obtenemos el orden actual si hay alguno activo
+    let sortValue = 'date_desc';
+    const activeHeader = document.querySelector('#history-table thead th.active-sort');
+    if (activeHeader) {
+        const key = activeHeader.getAttribute('data-sort');
+        const state = activeHeader.getAttribute('data-sort-state');
+        if (state !== 'none') {
+            if (key === 'date') sortValue = `date_${state}`;
+            else {
+                if (state === 'desc') {
+                    if (key === 'id') sortValue = 'id_desc';
+                    else if (key === 'client') sortValue = 'client_desc';
+                    else if (key === 'technician') sortValue = 'tech_desc';
+                    else if (key === 'problem') sortValue = 'problem_desc';
+                } else {
+                    sortValue = key;
+                }
+            }
+        }
+    }
+
+    loadHistory(ref, type, client, tech, problem, sortValue, delivered);
 }
 
+// Función Debounce para no saturar el servidor
 function debounce(func, timeout = 300) {
     let timer;
     return (...args) => {
@@ -368,6 +427,7 @@ function debounce(func, timeout = 300) {
 
 const debouncedSearch = debounce(() => triggerLiveSearch());
 
+// Asignar eventos live
 [searchRefInput, 
  document.getElementById('history-client-filter'), 
  document.getElementById('history-tech-filter'), 
@@ -383,6 +443,71 @@ const debouncedSearch = debounce(() => triggerLiveSearch());
 btns.search.addEventListener('click', () => {
     triggerLiveSearch();
 });
+
+// Ordenación por click en columnas
+const headerSortButtons = document.querySelectorAll('#history-table thead th.sort-header');
+let currentSortDirection = {
+    id: 'asc',
+    type: 'asc',
+    client: 'asc',
+    technician: 'asc',
+    date: 'desc',
+    problem: 'asc'
+};
+
+headerSortButtons.forEach(th => {
+    th.addEventListener('click', () => {
+        const sortKey = th.getAttribute('data-sort');
+        
+        // Ciclo: ninguno -> asc -> desc -> ninguno
+        let currentState = th.getAttribute('data-sort-state') || 'none';
+        let newState;
+        if (currentState === 'none') newState = 'asc';
+        else if (currentState === 'asc') newState = 'desc';
+        else newState = 'none';
+
+        // Actualizar visualmente todos los headers
+        headerSortButtons.forEach(h => {
+            h.classList.remove('active-sort', 'asc', 'desc');
+            h.setAttribute('data-sort-state', 'none');
+        });
+
+        let sortValue = 'date_desc'; // Por defecto
+
+        if (newState !== 'none') {
+            th.classList.add('active-sort', newState);
+            th.setAttribute('data-sort-state', newState);
+            
+            if (sortKey === 'date') {
+                sortValue = `date_${newState}`;
+            } else {
+                sortValue = newState === 'asc' ? sortKey : `${sortKey}_desc`; // Simplificación o ajuste según backend
+                // Nota: El backend espera 'sortFilter'. Si enviamos 'client' suele ser asc. 
+                // Para simplificar, si es 'desc' concatenamos o manejamos según soporte.
+                // Ajustamos para que coincida con lo que espera loadHistory/get_records.php
+                if (newState === 'desc') {
+                    if (sortKey === 'id') sortValue = 'id_desc';
+                    else if (sortKey === 'client') sortValue = 'client_desc';
+                    else if (sortKey === 'technician') sortValue = 'tech_desc';
+                    else if (sortKey === 'problem') sortValue = 'problem_desc';
+                } else {
+                    sortValue = sortKey;
+                }
+            }
+        }
+
+        const ref = searchRefInput.value.trim();
+        const type = document.getElementById('history-type-filter').value;
+        const client = document.getElementById('history-client-filter').value.trim();
+        const tech = document.getElementById('history-tech-filter').value.trim();
+        const problem = document.getElementById('history-problem-filter').value.trim();
+        const delivered = document.getElementById('history-delivered-filter').value;
+
+        loadHistory(ref, type, client, tech, problem, sortValue, delivered);
+    });
+});
+
+// --- ELIMINADA DUPLICIDAD DE SHOWVIEW ---
 
 document.getElementById('btn-clear-filters').addEventListener('click', () => {
     document.getElementById('search-ref').value = '';
@@ -404,9 +529,12 @@ document.addEventListener('click', (e) => {
         const id = e.target.getAttribute('data-id');
         const type = e.target.getAttribute('data-type');
         deleteRecord(id, type);
+    } else if (e.target.classList.contains('btn-print-ref')) {
+        const id = e.target.getAttribute('data-id');
+        printLabel(id, 'QL-570', 1, 'ref'); // Solo la etiqueta (Brother)
     } else if (e.target.classList.contains('btn-print')) {
         const id = e.target.getAttribute('data-id');
-        printLabel(id);
+        printLabel(id, 'GK420d', 1, 'full'); // Solo el informe (Zebra)
     } else if (e.target.classList.contains('btn-status')) {
         const btn = e.target;
         const id = btn.getAttribute('data-id');
@@ -414,6 +542,19 @@ document.addEventListener('click', (e) => {
         const wasDelivered = btn.getAttribute('data-delivered') == '1';
         const newDelivered = wasDelivered ? 0 : 1;
 
+        // 1. ACTUALIZACIÓN OPTIMISTA (Instantánea)
+        btn.setAttribute('data-delivered', newDelivered);
+        btn.textContent = newDelivered === 1 ? '⏳' : '✅';
+        btn.title = newDelivered === 1 ? 'Marcar como Pendiente' : 'Marcar como Entregado';
+
+        const row = btn.closest('tr');
+        const badge = row.querySelector('.status-badge');
+        if (badge) {
+            badge.className = `status-badge ${newDelivered === 1 ? 'status-delivered' : 'status-pending'}`;
+            badge.textContent = newDelivered === 1 ? '✅ Entregado' : '⏳ Pendiente';
+        }
+
+        // 2. SINCRONIZACIÓN SILENCIOSA
         fetch('change_status.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -423,9 +564,9 @@ document.addEventListener('click', (e) => {
         .then(res => {
             if (res.status === 'success') {
                 showToast(newDelivered ? 'Equipo ENTREGADO ✅' : 'Equipo PENDIENTE ⏳');
-                triggerLiveSearch();
             } else {
                 showToast('Error: ' + res.message);
+                // Revertir si falla (opcional)
             }
         });
     }
@@ -438,7 +579,8 @@ const editTechSelect = document.getElementById('edit-tech');
 const editComponentsList = document.getElementById('edit-components-list');
 
 function openEditModal(id, type) {
-    fetch(`get_records.php?id=${encodeURIComponent(id)}`)
+    // Cargar datos del registro
+    fetch(`get_records.php?ref=${encodeURIComponent(id)}`)
         .then(res => res.json())
         .then(records => {
             const record = records.find(r => r.id === id);
@@ -450,6 +592,7 @@ function openEditModal(id, type) {
             document.getElementById('edit-tech').value = record.technician;
             document.getElementById('edit-delivered').checked = record.delivered == 1;
 
+            // Poblar técnicos
             editTechSelect.innerHTML = '';
             STATE.technicians.forEach(tech => {
                 const opt = document.createElement('option');
@@ -470,7 +613,14 @@ function openEditModal(id, type) {
                 document.getElementById('edit-accessories-group').style.display = 'none';
                 document.getElementById('edit-components-group').style.display = 'block';
 
-                const defaultComponents = ['Placa Base', 'CPU', 'RAM', 'Caja', 'PCI-e (Opc.)'];
+                const defaultComponents = [
+                    'Placa Base',
+                    'CPU',
+                    'RAM',
+                    'Caja',
+                    'PCI-e (Opcional)'
+                ];
+
                 const filledComponents = {};
                 (record.components || []).forEach(comp => {
                     filledComponents[comp.label] = { pn: comp.pn || '', sn: comp.sn || '' };
@@ -489,6 +639,7 @@ function openEditModal(id, type) {
                     editComponentsList.appendChild(div);
                 });
 
+                // Añadir adicionales si hay más componentes de la creación
                 (record.components || []).forEach(comp => {
                     if (!defaultComponents.includes(comp.label)) {
                         const div = document.createElement('div');
@@ -539,7 +690,7 @@ editForm.addEventListener('submit', (e) => {
             if (res.status === 'success') {
                 editModal.classList.add('hidden');
                 showToast('Registro actualizado con éxito');
-                triggerLiveSearch();
+                loadHistory(); // Recargar historial
             } else {
                 showToast('Error al actualizar registro');
             }
@@ -559,7 +710,10 @@ document.getElementById('edit-add-component').addEventListener('click', () => {
         <button type="button" class="remove-component">✖</button>
     `;
     editComponentsList.appendChild(div);
-    div.querySelector('.remove-component').addEventListener('click', () => div.remove());
+
+    div.querySelector('.remove-component').addEventListener('click', () => {
+        div.remove();
+    });
 });
 
 function updateRecord(record) {
@@ -583,7 +737,7 @@ function deleteRecord(id, type) {
         .then(res => {
             if (res.status === 'success') {
                 showToast('Registro eliminado con éxito');
-                triggerLiveSearch();
+                loadHistory();
             } else {
                 showToast('Error al eliminar registro');
             }
@@ -600,6 +754,30 @@ function showToast(msg) {
     setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
-function printLabel(id) {
-    window.open(`print.php?id=${encodeURIComponent(id)}`, '_blank');
+function printLabels(id, copies = 1, printer = 'gk420d') {
+    printLabel(id, printer, copies);
+}
+
+function printLabel(id, printer = null, copies = 1, mode = 'full') {
+    let url = `print.php?id=${encodeURIComponent(id)}`;
+    if (printer) url += `&printer=${encodeURIComponent(printer)}`;
+    if (copies > 1) url += `&copies=${encodeURIComponent(copies)}`;
+    if (mode !== 'full') url += `&mode=${encodeURIComponent(mode)}`;
+
+    const targetLabel = printer ? `(${printer})` : '(Auto)';
+    
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast(`Impresión enviada ${targetLabel}: ${id}`);
+            } else {
+                console.error('Print error:', data);
+                showToast(`Error al imprimir ${targetLabel}`);
+            }
+        })
+        .catch(err => {
+            console.error('Fetch error:', err);
+            showToast('Error al conectar con servidor de impresión');
+        });
 }
